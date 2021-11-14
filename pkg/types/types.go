@@ -1,3 +1,24 @@
+/*
+Copyright (c) 2021 Mark Hindess
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
 package types
 
 import (
@@ -7,7 +28,13 @@ import (
 	"unicode"
 )
 
-type StatusResponseOne struct {
+type AuthResponse struct {
+	ErrorCode      int    `json:"err"`
+	SessionTimeout Time   `json:"sessionTimeout"`
+	BoardType      string `json:"boardType"`
+}
+
+type StatusResponse1 struct {
 	Status      Status       `json:"status,omitempty"`
 	Coordinates StatusCoords `json:"coords,omitempty"`
 	Speeds      Speeds       `json:"speeds,omitempty"`
@@ -22,7 +49,7 @@ type StatusResponseOne struct {
 	Scanner     Scanner      `json:"scanner,omitempty"`
 }
 
-type StatusResponseTwo struct {
+type StatusResponse2 struct {
 	Status      Status       `json:"status,omitempty"`
 	Coordinates StatusCoords `json:"coords,omitempty"`
 	Speeds      Speeds       `json:"speeds,omitempty"`
@@ -51,7 +78,7 @@ type StatusResponseTwo struct {
 	VIN                    MinCurMax    `json:"vin,omitempty"`
 }
 
-type StatusResponseThree struct {
+type StatusResponse3 struct {
 	Status      Status       `json:"status,omitempty"`
 	Coordinates StatusCoords `json:"coords,omitempty"`
 	Speeds      Speeds       `json:"speeds,omitempty"`
@@ -180,6 +207,32 @@ const (
 	ToolChanging Status = "T"
 )
 
+func (s Status) String() string {
+	switch s {
+	case Configuring:
+		return "configuring"
+	case Idle:
+		return "idle"
+	case Busy:
+		return "busy"
+	case Printing:
+		return "printing"
+	case Pausing:
+		return "pausing"
+	case Stopped:
+		return "stopped"
+	case Resuming:
+		return "resuming"
+	case Halted:
+		return "halted"
+	case Flashing:
+		return "flashing"
+	case ToolChanging:
+		return "toolchanging"
+	}
+	return "unknown"
+}
+
 // C (configuration file is being processed)
 // I (idle, no movement or code is being performed)
 // B (busy, live movement is in progress or a macro file is being run)
@@ -199,6 +252,21 @@ const (
 	Active  TempState = 2
 	Fault   TempState = 3
 )
+
+func (s TempState) String() string {
+	switch s {
+	case Off:
+		return "off"
+	case Standby:
+		return "standby"
+	case Active:
+		return "active"
+	case Fault:
+		return "fault"
+	default:
+		return "unknown"
+	}
+}
 
 type Temp struct {
 	Current float64   `json:"current,omitempty"`
@@ -229,6 +297,20 @@ const (
 	ScannerScanning     ScannerStatus = "S"
 	ScannerUploading    ScannerStatus = "U"
 )
+
+func (s ScannerStatus) String() string {
+	switch s {
+	case ScannerDisconnected:
+		return "disconnected"
+	case ScannerIdle:
+		return "idle"
+	case ScannerScanning:
+		return "scanning"
+	case ScannerUploading:
+		return "uploading"
+	}
+	return "unknown"
+}
 
 type Scanner struct {
 	Status   ScannerStatus `json:"status,omitempty"`

@@ -8,6 +8,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_Status_String(t *testing.T) {
+	assert.Equal(t, Configuring.String(), "configuring")
+	assert.Equal(t, Idle.String(), "idle")
+	assert.Equal(t, Busy.String(), "busy")
+	assert.Equal(t, Printing.String(), "printing")
+	assert.Equal(t, Pausing.String(), "pausing")
+	assert.Equal(t, Stopped.String(), "stopped")
+	assert.Equal(t, Resuming.String(), "resuming")
+	assert.Equal(t, Halted.String(), "halted")
+	assert.Equal(t, Flashing.String(), "flashing")
+	assert.Equal(t, ToolChanging.String(), "toolchanging")
+	assert.Equal(t, Status("?").String(), "unknown")
+}
+
+func Test_TempState_String(t *testing.T) {
+	assert.Equal(t, Off.String(), "off")
+	assert.Equal(t, Standby.String(), "standby")
+	assert.Equal(t, Active.String(), "active")
+	assert.Equal(t, Fault.String(), "fault")
+	assert.Equal(t, TempState(-1).String(), "unknown")
+}
+
+func Test_ScannerStatus_String(t *testing.T) {
+	assert.Equal(t, ScannerDisconnected.String(), "disconnected")
+	assert.Equal(t, ScannerIdle.String(), "idle")
+	assert.Equal(t, ScannerScanning.String(), "scanning")
+	assert.Equal(t, ScannerUploading.String(), "uploading")
+	assert.Equal(t, ScannerStatus("?").String(), "unknown")
+}
+
 func Test_FanRPM(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -58,17 +88,17 @@ func Test_FanRPM(t *testing.T) {
 	}
 }
 
-func Test_StatusResponseOne(t *testing.T) {
+func Test_StatusResponse1(t *testing.T) {
 	tests := []struct {
 		name    string
 		file    string
-		want    StatusResponseOne
+		want    StatusResponse1
 		wantErr bool
 	}{
 		{
 			name: "Status 1 idle response",
 			file: "testdata/type-1-idle-status.json",
-			want: StatusResponseOne{
+			want: StatusResponse1{
 				Status: Idle,
 				Coordinates: StatusCoords{
 					AxisHomed: []RRFBool{false, false, false},
@@ -95,7 +125,7 @@ func Test_StatusResponseOne(t *testing.T) {
 		{
 			name: "Status 1 response while printing",
 			file: "testdata/response-one-printing.json",
-			want: StatusResponseOne{
+			want: StatusResponse1{
 				Status: Printing,
 				Coordinates: StatusCoords{
 					AxisHomed: []RRFBool{true, true, true},
@@ -139,7 +169,7 @@ func Test_StatusResponseOne(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			data, err := os.ReadFile(tc.file)
 			assert.NoError(t, err)
-			var status StatusResponseOne
+			var status StatusResponse1
 			err = json.Unmarshal(data, &status)
 			if tc.wantErr {
 				assert.Error(t, err)
@@ -151,17 +181,17 @@ func Test_StatusResponseOne(t *testing.T) {
 	}
 }
 
-func Test_StatusResponseTwo(t *testing.T) {
+func Test_StatusResponse2(t *testing.T) {
 	tests := []struct {
 		name    string
 		file    string
-		want    StatusResponseTwo
+		want    StatusResponse2
 		wantErr bool
 	}{
 		{
 			name: "Status 2 idle response",
 			file: "testdata/type-2-idle-status.json",
-			want: StatusResponseTwo{
+			want: StatusResponse2{
 				Status: Idle,
 				Coordinates: StatusCoords{
 					AxisHomed: []RRFBool{false, false, false},
@@ -222,7 +252,7 @@ func Test_StatusResponseTwo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			data, err := os.ReadFile(tc.file)
 			assert.NoError(t, err)
-			var status StatusResponseTwo
+			var status StatusResponse2
 			err = json.Unmarshal(data, &status)
 			if tc.wantErr {
 				assert.Error(t, err)
@@ -234,17 +264,17 @@ func Test_StatusResponseTwo(t *testing.T) {
 	}
 }
 
-func Test_StatusResponseThree(t *testing.T) {
+func Test_StatusResponse3(t *testing.T) {
 	tests := []struct {
 		name    string
 		file    string
-		want    StatusResponseThree
+		want    StatusResponse3
 		wantErr bool
 	}{
 		{
 			name: "Status 3 idle response",
 			file: "testdata/type-3-idle-status.json",
-			want: StatusResponseThree{
+			want: StatusResponse3{
 				Status: Idle,
 				Coordinates: StatusCoords{
 					AxisHomed: []RRFBool{false, false, false},
@@ -279,7 +309,7 @@ func Test_StatusResponseThree(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			data, err := os.ReadFile(tc.file)
 			assert.NoError(t, err)
-			var status StatusResponseThree
+			var status StatusResponse3
 			err = json.Unmarshal(data, &status)
 			if tc.wantErr {
 				assert.Error(t, err)
