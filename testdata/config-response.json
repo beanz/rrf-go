@@ -1,0 +1,76 @@
+{
+  "axisMins": [
+    -100,
+    -100,
+    -0.2
+  ],
+  "axisMaxes": [
+    100,
+    100,
+    550.01
+  ],
+  "accelerations": [
+    3000,
+    3000,
+    3000,
+    1000,
+    1000,
+    250,
+    250,
+    250,
+    250,
+    250,
+    250,
+    250
+  ],
+  "currents": [
+    800,
+    800,
+    800,
+    500,
+    500,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "firmwareElectronics": "Duet WiFi 1.0 or 1.01",
+  "firmwareName": "RepRapFirmware for Duet 2 WiFi/Ethernet",
+  "firmwareVersion": "2.05.1",
+  "dwsVersion": "1.23",
+  "firmwareDate": "2020-02-09b1",
+  "sysdir": "0:/sys/",
+  "idleCurrentFactor": 60,
+  "idleTimeout": 30,
+  "minFeedrates": [
+    20,
+    20,
+    20,
+    10,
+    10,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+  ],
+  "maxFeedrates": [
+    333.33,
+    333.33,
+    333.33,
+    60,
+    60,
+    20,
+    20,
+    20,
+    20,
+    20,
+    20,
+    20
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "status": "I",
+  "heaters": [
+    0,
+    22.3
+  ],
+  "active": [
+    0,
+    0
+  ],
+  "standby": [
+    0,
+    0
+  ],
+  "hstat": [
+    0,
+    2
+  ],
+  "pos": [
+    0,
+    0,
+    550.008
+  ],
+  "machine": [
+    0,
+    0,
+    550.008
+  ],
+  "sfactor": 100,
+  "efactor": [
+    100
+  ],
+  "babystep": 0,
+  "tool": 0,
+  "probe": "0",
+  "fanPercent": [
+    0,
+    0,
+    50.2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "fanRPM": 0,
+  "homed": [
+    0,
+    0,
+    0
+  ],
+  "msgBox.mode": -1,
+  "seq": 3,
+  "resp": ""
+}

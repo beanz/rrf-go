@@ -1,0 +1,94 @@
+{
+  "status": "I",
+  "coords": {
+    "axesHomed": [
+      0,
+      0,
+      0
+    ],
+    "wpl": 1,
+    "xyz": [
+      0,
+      0,
+      550.008
+    ],
+    "machine": [
+      0,
+      0,
+      550.008
+    ],
+    "extr": [
+      0
+    ]
+  },
+  "speeds": {
+    "requested": 0,
+    "top": 0
+  },
+  "currentTool": 0,
+  "params": {
+    "atxPower": 0,
+    "fanPercent": [
+      0,
+      50,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speedFactor": 100,
+    "extrFactors": [
+      100
+    ],
+    "babystep": 0
+  },
+  "seq": 0,
+  "sensors": {
+    "probeValue": 0,
+    "fanRPM": 0
+  },
+  "temps": {
+    "current": [
+      2000,
+      22.3,
+      2000,
+      2000,
+      2000,
+      2000,
+      2000,
+      2000
+    ],
+    "state": [
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "tools": {
+      "active": [
+        [
+          0
+        ]
+      ],
+      "standby": [
+        [
+          0
+        ]
+      ]
+    },
+    "extra": [
+      {
+        "name": "*MCU",
+        "temp": 38.3
+      }
+    ]
+  },
+  "time": 567
+}
