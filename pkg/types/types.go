@@ -1,4 +1,4 @@
-package rrf
+package types
 
 import (
 	"fmt"
