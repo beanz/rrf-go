@@ -118,6 +118,14 @@ func Test_StatusResponse1(t *testing.T) {
 						Active:  [][]float64{[]float64{0}},
 						Standby: [][]float64{[]float64{0}},
 					},
+					Current: []float64{
+						2000, 22.3, 2000, 2000,
+						2000, 2000, 2000, 2000,
+					},
+					State: []TempState{
+						Off, Active, Off, Off,
+						Off, Off, Off, Off,
+					},
 				},
 				UpTime: 567,
 			},
@@ -151,6 +159,12 @@ func Test_StatusResponse1(t *testing.T) {
 					FanRPM:     []float64{-1.0, -1.0},
 				},
 				Temps: Temps{
+					Current: []float64{
+						72, 219.7,
+					},
+					State: []TempState{
+						Active, Active,
+					},
 					Bed: Temp{
 						Current: 72.0,
 						Active:  72.0,
@@ -207,6 +221,18 @@ func Test_StatusResponse2(t *testing.T) {
 					FanRPM: FanRPMs{0},
 				},
 				Temps: Temps{
+					Current: []float64{
+						2000, 22.3, 2000, 2000,
+						2000, 2000, 2000, 2000,
+					},
+					State: []TempState{
+						Off, Active, Off, Off,
+						Off, Off, Off, Off,
+					},
+					Names: []string{
+						"", "", "", "",
+						"", "", "", "",
+					},
 					Bed: Temp{
 						Current: 0,
 						Active:  0,
@@ -298,6 +324,14 @@ func Test_StatusResponse3(t *testing.T) {
 					Tools: ToolTemps{
 						Active:  [][]float64{[]float64{0}},
 						Standby: [][]float64{[]float64{0}},
+					},
+					Current: []float64{
+						2000, 22.3, 2000, 2000,
+						2000, 2000, 2000, 2000,
+					},
+					State: []TempState{
+						Off, Active, Off, Off,
+						Off, Off, Off, Off,
 					},
 				},
 				UpTime:  567,

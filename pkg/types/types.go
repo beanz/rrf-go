@@ -281,10 +281,13 @@ type ToolTemps struct {
 }
 
 type Temps struct {
-	Bed     Temp      `json:"bed,omitempty"`
-	Chamber Temp      `json:"chamber,omitempty"`
-	Heads   Temp      `json:"heads,omitempty"`
-	Tools   ToolTemps `json:"tools,omitempty"`
+	Bed     Temp        `json:"bed,omitempty"`
+	Chamber Temp        `json:"chamber,omitempty"`
+	Heads   Temp        `json:"heads,omitempty"`
+	Tools   ToolTemps   `json:"tools,omitempty"`
+	Current []float64   `json:"current,omitempty"`
+	State   []TempState `json:"state,omitempty"`
+	Names   []string    `json:"names,omitempty"`
 }
 
 type Time float64 // todo parse to time.Duration
