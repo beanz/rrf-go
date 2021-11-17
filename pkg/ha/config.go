@@ -8,6 +8,7 @@ type Config struct {
 	AppName              string
 	Version              string
 	Devices              []string
+	Password             string
 	Broker               string
 	ClientID             string
 	TopicPrefix          string

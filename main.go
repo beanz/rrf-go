@@ -79,7 +79,7 @@ func main() {
 							if err != nil {
 								return err
 							}
-							fmt.Fprintf(stdout, string(pj))
+							fmt.Fprint(stdout, string(pj))
 							return nil
 						}
 						fmt.Fprintf(stdout, `%s:
@@ -126,6 +126,7 @@ func main() {
 						AppName:              appName,
 						Version:              Version,
 						Devices:              c.Args().Slice(),
+						Password:             c.String("password"),
 						Broker:               c.String("broker"),
 						ClientID:             c.String("client-id"),
 						TopicPrefix:          c.String("topic-prefix"),
@@ -169,13 +170,15 @@ func main() {
 					},
 					&cli.DurationFlag{
 						Name: "interval", Aliases: []string{"i"},
-						Usage: "interval between polling devices",
-						Value: time.Second * 60,
+						Usage:   "interval between polling devices",
+						EnvVars: []string{"RRF_INTERVAL"},
+						Value:   time.Second * 60,
 					},
 					&cli.DurationFlag{
 						Name: "discovery-interval", Aliases: []string{"di"},
-						Usage: "interval between publishing discovery messages",
-						Value: time.Hour,
+						Usage:   "interval between publishing discovery messages",
+						EnvVars: []string{"RRF_DISCOVERY_INTERVAL"},
+						Value:   time.Hour,
 					},
 					&cli.DurationFlag{
 						Name:  "connect-retry-delay",

@@ -8,8 +8,13 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
+
+	ha "github.com/beanz/homeassistant-go/pkg/types"
+	"github.com/beanz/rrf-go/pkg/netrrf"
+	"github.com/beanz/rrf-go/pkg/types"
 
 	"github.com/eclipse/paho.golang/autopaho"
 	"github.com/eclipse/paho.golang/paho"
@@ -30,7 +35,7 @@ func Run(cfg *Config, logger *log.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	bridgeAvailabilityTopic := cfg.TopicPrefix + "/bridge/availability"
+	bridgeAvailabilityTopic := AvailabilityTopic(cfg, "bridge")
 
 	cmCfg := autopaho.ClientConfig{
 		BrokerUrls:        []*url.URL{brokerURL},
@@ -73,6 +78,18 @@ func Run(cfg *Config, logger *log.Logger) error {
 	if err != nil {
 		return err
 	}
+
+	err = cm.AwaitConnection(ctx)
+	if err != nil { // Should only happen when context is cancelled
+		return fmt.Errorf("broker connection error: %s", err)
+	}
+
+	pollc := make(chan PollResult, 10)
+
+	for i := range cfg.Devices {
+		go pollDevice(ctx, cm, cfg.Devices[i], cfg, logger, pollc)
+	}
+
 LOOP:
 	for {
 		err = cm.AwaitConnection(ctx)
@@ -81,6 +98,13 @@ LOOP:
 		}
 
 		select {
+		case r := <-pollc:
+			logger.Printf("got results for %s (name=%s)\n",
+				r.Host, r.Status2.Name)
+			if r.Config != nil {
+				sendDiscovery(ctx, cm, cfg, logger, r)
+			}
+			processResult(ctx, cm, cfg, logger, r)
 		case <-sigc:
 			break LOOP
 		}
@@ -97,6 +121,16 @@ LOOP:
 	_ = cm.Disconnect(ctx)
 
 	return nil
+}
+
+type PollResult struct {
+	Host              string
+	TopicFriendlyName string
+	AvailabilityTopic string
+	StateTopic        string
+	Config            *types.ConfigResponse
+	Status2           *types.StatusResponse2
+	Status3           *types.StatusResponse3
 }
 
 func pub(ctx context.Context, cm *autopaho.ConnectionManager, topic string, body interface{}, retain bool) error {
@@ -125,4 +159,155 @@ func pub(ctx context.Context, cm *autopaho.ConnectionManager, topic string, body
 		}
 	}(b)
 	return nil
+}
+
+func pollDevice(ctx context.Context, cm *autopaho.ConnectionManager, host string, cfg *Config, logger *log.Logger, pollc chan PollResult) {
+	ticker := time.NewTicker(cfg.Interval)
+
+	// strip domain
+	name := topicSafe(strings.SplitN(host, ".", 2)[0])
+
+	availabilityTopic := AvailabilityTopic(cfg, name)
+
+	var lastDiscovery *time.Time
+	lastAvailability := ""
+	for {
+		newAvailability := "offline"
+		logger.Printf("%s tick\n", host)
+		rrf := netrrf.NewClient(host, cfg.Password)
+		now := time.Now()
+		var cr *types.ConfigResponse
+		var err error
+		if lastDiscovery == nil || (*lastDiscovery).Add(cfg.DiscoveryInterval).Before(now) {
+			cr, err = rrf.Config(ctx)
+			if err != nil {
+				logger.Printf("poll of %s config failed: %v\n", host, err)
+				goto TICK
+			}
+			lastDiscovery = &now
+		}
+
+		{
+			s2, err := rrf.Status2(ctx)
+			if err != nil {
+				logger.Printf("poll of %s status2 failed: %v\n", host, err)
+				goto TICK
+			}
+			{
+				s3, err := rrf.Status3(ctx)
+				if err != nil {
+					logger.Printf("poll of %s status3 failed: %v\n", host, err)
+					goto TICK
+				}
+				newAvailability = "online"
+				topicFriendlyName := topicSafe(s2.Name)
+				pollc <- PollResult{
+					Host:              host,
+					TopicFriendlyName: topicFriendlyName,
+					AvailabilityTopic: availabilityTopic,
+					StateTopic:        StateTopic(cfg, topicFriendlyName),
+					Config:            cr,
+					Status2:           s2,
+					Status3:           s3,
+				}
+			}
+		}
+
+	TICK:
+
+		if lastAvailability != newAvailability {
+			lastAvailability = newAvailability
+			err = pub(ctx, cm, availabilityTopic, newAvailability, true)
+			if err != nil {
+				logger.Printf(
+					"failed to publish availability online message: %s", err)
+			}
+		}
+
+		<-ticker.C
+	}
+}
+
+func topicSafe(s string) string {
+	r := strings.ReplaceAll(s, "/", "_slash_")
+	r = strings.ReplaceAll(r, "#", "_hash_")
+	r = strings.ReplaceAll(r, "+", "_plus_")
+	r = strings.ReplaceAll(r, "-", "_")
+	r = strings.TrimLeft(r, "_")
+	r = strings.TrimRight(r, "_")
+	return strings.ToLower(r)
+}
+
+func ConfigTopic(cfg *Config, name, variable string) string {
+	return fmt.Sprintf("%s/sensor/%s_%s/config",
+		cfg.DiscoveryTopicPrefix, name, variable)
+}
+
+func StateTopic(cfg *Config, name string) string {
+	return fmt.Sprintf("%s/%s/state", cfg.TopicPrefix, name)
+}
+
+func AvailabilityTopic(cfg *Config, name string) string {
+	return fmt.Sprintf("%s/%s/availability", cfg.TopicPrefix, name)
+}
+
+func sendDiscovery(ctx context.Context, cm *autopaho.ConnectionManager, cfg *Config, logger *log.Logger, res PollResult) {
+	availability := []ha.Availability{
+		{Topic: AvailabilityTopic(cfg, "bridge")},
+		{Topic: AvailabilityTopic(cfg, res.TopicFriendlyName)},
+	}
+	realName := res.Status2.Name
+	variables := []struct {
+		field       string
+		icon        string
+		units       string
+		deviceClass *ha.DeviceClass
+	}{
+		{
+			field: "state",
+		},
+		{
+			field: "state_code",
+		},
+	}
+	for _, v := range variables {
+		sensor := ha.Sensor{
+			Availability: availability,
+			Name:         realName + " " + v.field,
+			Icon:         "mdi:printer-3d",
+			UniqueID:     res.TopicFriendlyName + "_" + v.field,
+			Device: ha.Device{
+				Identifiers: []string{
+					res.TopicFriendlyName,
+					res.TopicFriendlyName + "_" + v.field,
+				},
+				ConfigurationURL: "http://" + res.Host,
+				Name:             realName,
+				SwVersion:        res.Config.FirmwareName + " v" + res.Config.FirmwareVersion + " (" + string(res.Config.FirmwareDate) + ")",
+				Model:            res.Config.FirmwareElectronics,
+			},
+			StateTopic:    res.StateTopic,
+			ValueTemplate: "{{ value_json." + v.field + "}}",
+		}
+		if v.units != "" {
+			sensor.UnitOfMeasurement = v.units
+		}
+		if v.deviceClass != nil {
+			sensor.DeviceClass = *v.deviceClass
+		}
+		if v.icon != "" {
+			sensor.Icon = v.icon
+		}
+		err := pub(ctx, cm, ConfigTopic(cfg, res.TopicFriendlyName, v.field),
+			sensor, false)
+		if err != nil {
+			logger.Printf("error sending discovery message for %s\n", res.Host)
+			return
+		}
+	}
+}
+
+func processResult(ctx context.Context, cm *autopaho.ConnectionManager, cfg *Config, logger *log.Logger, res PollResult) {
+	//t := float64(time.Now().UnixNano()/1000000) / 1000
+
 }
