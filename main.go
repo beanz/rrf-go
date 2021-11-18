@@ -26,10 +26,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/beanz/rrf-go/pkg/ha"
+	"github.com/beanz/rrf-go/pkg/mock"
 	"github.com/beanz/rrf-go/pkg/netrrf"
 	"github.com/urfave/cli/v2"
 )
@@ -113,6 +115,35 @@ func main() {
 						Name:    "output",
 						Aliases: []string{"o"},
 						Usage:   "output format",
+					},
+				},
+			},
+			{
+				Name:    "mock",
+				Aliases: []string{"m"},
+				Usage:   "simple mock reprapfirmware device server for testing",
+				Action: func(c *cli.Context) error {
+					mock := mock.NewMockRRF(
+						log.New(stdout, "",
+							log.Ldate|log.Ltime|log.Lmicroseconds))
+					srv := &http.Server{
+						Addr:           c.String("bind"),
+						Handler:        mock.Router(),
+						ReadTimeout:    10 * time.Second,
+						WriteTimeout:   10 * time.Second,
+						MaxHeaderBytes: 1 << 20,
+					}
+					if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+						return fmt.Errorf("http server failed: %v", err)
+					}
+					return nil
+				},
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "bind",
+						Aliases: []string{"b"},
+						Usage:   "address:port to bind mock server",
+						Value:   "127.0.0.1:8888",
 					},
 				},
 			},
