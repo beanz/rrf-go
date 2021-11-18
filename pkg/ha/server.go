@@ -20,6 +20,11 @@ import (
 	"github.com/eclipse/paho.golang/paho"
 )
 
+type Msg struct {
+	topic string
+	body  interface{}
+}
+
 func Run(cfg *Config, logger *log.Logger) error {
 	logger.Printf("%s v%s\n", cfg.AppName, cfg.Version)
 	logger.Println("Starting Home Assistant integration")
@@ -101,10 +106,24 @@ LOOP:
 		case r := <-pollc:
 			logger.Printf("got results for %s (name=%s)\n",
 				r.Host, r.Status2.Name)
+			variables := variablesFromResults(&r)
 			if r.Config != nil {
-				sendDiscovery(ctx, cm, cfg, logger, r)
+				msgs := discoveryMessages(cfg, &r, variables)
+				for _, msg := range msgs {
+					err = pub(ctx, cm, msg.topic, msg.body, true)
+					if err != nil {
+						logger.Printf(
+							"failed to publish discovery message for %s: %s",
+							r.Host, err)
+					}
+				}
 			}
-			processResult(ctx, cm, cfg, logger, r)
+			msg := resultMessage(&r, variables)
+			err = pub(ctx, cm, msg.topic, msg.body, false)
+			if err != nil {
+				logger.Printf(
+					"failed to publish state message for %s: %s", r.Host, err)
+			}
 		case <-sigc:
 			break LOOP
 		}
@@ -200,12 +219,11 @@ func pollDevice(ctx context.Context, cm *autopaho.ConnectionManager, host string
 					goto TICK
 				}
 				newAvailability = "online"
-				topicFriendlyName := topicSafe(s2.Name)
 				pollc <- PollResult{
 					Host:              host,
-					TopicFriendlyName: topicFriendlyName,
+					TopicFriendlyName: name,
 					AvailabilityTopic: availabilityTopic,
-					StateTopic:        StateTopic(cfg, topicFriendlyName),
+					StateTopic:        StateTopic(cfg, name),
 					Config:            cr,
 					Status2:           s2,
 					Status3:           s3,
@@ -251,25 +269,137 @@ func AvailabilityTopic(cfg *Config, name string) string {
 	return fmt.Sprintf("%s/%s/availability", cfg.TopicPrefix, name)
 }
 
-func sendDiscovery(ctx context.Context, cm *autopaho.ConnectionManager, cfg *Config, logger *log.Logger, res PollResult) {
-	availability := []ha.Availability{
-		{Topic: AvailabilityTopic(cfg, "bridge")},
-		{Topic: AvailabilityTopic(cfg, res.TopicFriendlyName)},
+type Variable struct {
+	field       string
+	icon        string
+	units       string
+	deviceClass *ha.DeviceClass
+	value       interface{}
+}
+
+func variablesFromResults(res *PollResult) []Variable {
+	dcTemp := ha.DeviceClassTemperature
+	dcVolt := ha.DeviceClassVoltage
+
+	// something graphable:
+	// 0 for off, 1 for idle, 2 for exception and 3 for printing
+	stateCode := map[types.Status]int{
+		types.Configuring:  1,
+		types.Idle:         1,
+		types.Busy:         1,
+		types.Printing:     3,
+		types.Pausing:      3,
+		types.Stopped:      2,
+		types.Resuming:     3,
+		types.Halted:       2,
+		types.Flashing:     2,
+		types.ToolChanging: 3,
 	}
-	realName := res.Status2.Name
-	variables := []struct {
-		field       string
-		icon        string
-		units       string
-		deviceClass *ha.DeviceClass
-	}{
+
+	variables := []Variable{
 		{
 			field: "state",
+			value: res.Status2.Status.String(),
 		},
 		{
 			field: "state_code",
+			value: stateCode[res.Status2.Status],
+		},
+		{
+			field: "file_time_remaining",
+			value: res.Status3.TimesLeft.File,
+		},
+		{
+			field: "filament_time_remaining",
+			value: res.Status3.TimesLeft.Filament,
+		},
+		{
+			field: "layer_time_remaining",
+			value: res.Status3.TimesLeft.Layer,
+		},
+		{
+			field:       "mcu_temp_min",
+			units:       "°C",
+			deviceClass: &dcTemp,
+			value:       res.Status2.MCUTemp.Min,
+		},
+		{
+			field:       "mcu_temp_cur",
+			units:       "°C",
+			deviceClass: &dcTemp,
+			value:       res.Status2.MCUTemp.Cur,
+		},
+		{
+			field:       "mcu_temp_max",
+			units:       "°C",
+			deviceClass: &dcTemp,
+			value:       res.Status2.MCUTemp.Max,
+		},
+		{
+			field:       "vin_min",
+			units:       "V",
+			deviceClass: &dcVolt,
+			value:       res.Status2.VIN.Min,
+		},
+		{
+			field:       "vin_cur",
+			units:       "V",
+			deviceClass: &dcVolt,
+			value:       res.Status2.VIN.Cur,
+		},
+		{
+			field:       "vin_max",
+			units:       "V",
+			deviceClass: &dcVolt,
+			value:       res.Status2.VIN.Max,
+		},
+		{
+			field: "geometry",
+			value: res.Status2.Geometry,
 		},
 	}
+	if len(res.Status2.Coordinates.XYZ) == 3 {
+		for i, v := range []string{"x", "y", "z"} {
+			variables = append(variables, Variable{
+				field: v,
+				icon:  "mdi:axis-" + v + "-arrow",
+				value: res.Status2.Coordinates.XYZ[i],
+			})
+		}
+	}
+	for i := range res.Status2.Coordinates.Extruder {
+		variables = append(variables, Variable{
+			field: fmt.Sprintf("e%d", i),
+			icon:  "mdi:mdi-printer-3d-nozzle",
+			value: res.Status2.Coordinates.Extruder[i],
+		})
+	}
+	for i := range res.Status2.Temps.Current {
+		if res.Status2.Temps.Current[i] > 1000 {
+			continue
+		}
+		temp := fmt.Sprintf("temp%d", i)
+		if len(res.Status2.Temps.Names) > i && res.Status2.Temps.Names[i] != "" {
+			temp = res.Status2.Temps.Names[i]
+		}
+		variables = append(variables, Variable{
+			field:       temp,
+			units:       "°C",
+			deviceClass: &dcTemp,
+			value:       res.Status2.Temps.Current[i],
+		})
+	}
+	return variables
+}
+
+func discoveryMessages(cfg *Config, res *PollResult, variables []Variable) []*Msg {
+	availability := []ha.Availability{
+		{Topic: AvailabilityTopic(cfg, "bridge")},
+		{Topic: res.AvailabilityTopic},
+	}
+	realName := res.Status2.Name
+
+	msgs := []*Msg{}
 	for _, v := range variables {
 		sensor := ha.Sensor{
 			Availability: availability,
@@ -298,16 +428,21 @@ func sendDiscovery(ctx context.Context, cm *autopaho.ConnectionManager, cfg *Con
 		if v.icon != "" {
 			sensor.Icon = v.icon
 		}
-		err := pub(ctx, cm, ConfigTopic(cfg, res.TopicFriendlyName, v.field),
-			sensor, false)
-		if err != nil {
-			logger.Printf("error sending discovery message for %s\n", res.Host)
-			return
-		}
+		msgs = append(msgs, &Msg{
+			topic: ConfigTopic(cfg, res.TopicFriendlyName, v.field),
+			body:  sensor,
+		})
 	}
+	return msgs
 }
 
-func processResult(ctx context.Context, cm *autopaho.ConnectionManager, cfg *Config, logger *log.Logger, res PollResult) {
-	//t := float64(time.Now().UnixNano()/1000000) / 1000
-
+func resultMessage(res *PollResult, variables []Variable) *Msg {
+	t := float64(time.Now().UnixNano()/1000000) / 1000
+	msg := map[string]interface{}{
+		"t": t,
+	}
+	for _, v := range variables {
+		msg[v.field] = v.value
+	}
+	return &Msg{topic: res.StateTopic, body: msg}
 }
