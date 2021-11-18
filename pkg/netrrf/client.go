@@ -131,43 +131,17 @@ func (c *Client) Config(ctx context.Context) (*types.ConfigResponse, error) {
 	return &resp, nil
 }
 
-func (c *Client) status(ctx context.Context, t int, res interface{}) error {
+func (c *Client) Status(ctx context.Context, t int) (*types.StatusResponse, error) {
 	if !c.authDone {
 		err := c.Authenticate(ctx)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	err := c.Request(ctx, fmt.Sprintf("rr_status?type=%d", t), res)
+	var res types.StatusResponse
+	err := c.Request(ctx, fmt.Sprintf("rr_status?type=%d", t), &res)
 	if err != nil {
-		return fmt.Errorf("rrf status 1 failed %w", err)
+		return nil, fmt.Errorf("rrf status %d failed %w", t, err)
 	}
-	return nil
-}
-
-func (c *Client) Status1(ctx context.Context) (*types.StatusResponse, error) {
-	var resp types.StatusResponse
-	err := c.status(ctx, 1, &resp)
-	if err != nil {
-		return nil, err
-	}
-	return &resp, nil
-}
-
-func (c *Client) Status2(ctx context.Context) (*types.StatusResponse, error) {
-	var resp types.StatusResponse
-	err := c.status(ctx, 2, &resp)
-	if err != nil {
-		return nil, err
-	}
-	return &resp, nil
-}
-
-func (c *Client) Status3(ctx context.Context) (*types.StatusResponse, error) {
-	var resp types.StatusResponse
-	err := c.status(ctx, 3, &resp)
-	if err != nil {
-		return nil, err
-	}
-	return &resp, nil
+	return &res, nil
 }

@@ -207,13 +207,13 @@ func pollDevice(ctx context.Context, cm *autopaho.ConnectionManager, host string
 		}
 
 		{
-			s2, err := rrf.Status2(ctx)
+			s2, err := rrf.Status(ctx, 2)
 			if err != nil {
 				logger.Printf("poll of %s status2 failed: %v\n", host, err)
 				goto TICK
 			}
 			{
-				s3, err := rrf.Status3(ctx)
+				s3, err := rrf.Status(ctx, 3)
 				if err != nil {
 					logger.Printf("poll of %s status3 failed: %v\n", host, err)
 					goto TICK

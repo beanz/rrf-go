@@ -321,7 +321,7 @@ func Test_Status1(t *testing.T) {
 				tc.responses, tc.errors, []*http.Request{}}
 			rrf := NewClient("localhost", "foo").WithHTTPClient(httpClient)
 			rrf.authDone = tc.authDone
-			s1, err := rrf.Status1(context.Background())
+			s1, err := rrf.Status(context.Background(), 1)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -377,7 +377,7 @@ func Test_Status2(t *testing.T) {
 				tc.responses, tc.errors, []*http.Request{}}
 			rrf := NewClient("localhost", "foo").WithHTTPClient(httpClient)
 			rrf.authDone = tc.authDone
-			s2, err := rrf.Status2(context.Background())
+			s2, err := rrf.Status(context.Background(), 2)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -433,7 +433,7 @@ func Test_Status3(t *testing.T) {
 				tc.responses, tc.errors, []*http.Request{}}
 			rrf := NewClient("localhost", "foo").WithHTTPClient(httpClient)
 			rrf.authDone = tc.authDone
-			s3, err := rrf.Status3(context.Background())
+			s3, err := rrf.Status(context.Background(), 3)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return

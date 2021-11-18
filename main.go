@@ -66,7 +66,7 @@ func main() {
 						if err != nil {
 							return err
 						}
-						s2, err := rrf.Status2(ctx)
+						s2, err := rrf.Status(ctx, 2)
 						if err != nil {
 							return err
 						}
