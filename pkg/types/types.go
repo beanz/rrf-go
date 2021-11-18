@@ -133,7 +133,7 @@ func (b *RRFBool) UnmarshalJSON(data []byte) error {
 }
 
 type StatusCoords struct {
-	AxisHomed []RRFBool `json:"axesHomed,omitempty"`
+	AxesHomed []RRFBool `json:"axesHomed,omitempty"`
 	Extruder  []float64 `json:"extr,omitempty"`
 	XYZ       []float64 `json:"xyz,omitempty"`
 	Machine   []float64 `json:"machine,omitempty"`

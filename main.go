@@ -97,7 +97,7 @@ func main() {
 						)
 						for i := 0; i < s2.Axes; i++ {
 							var homed string
-							if !s2.Coordinates.AxisHomed[i] {
+							if !s2.Coordinates.AxesHomed[i] {
 								homed = " (not homed)"
 							}
 							fmt.Fprintf(stdout,

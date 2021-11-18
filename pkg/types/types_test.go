@@ -101,7 +101,7 @@ func Test_StatusResponse1(t *testing.T) {
 			want: StatusResponse1{
 				Status: Idle,
 				Coordinates: StatusCoords{
-					AxisHomed: []RRFBool{false, false, false},
+					AxesHomed: []RRFBool{false, false, false},
 					XYZ:       []float64{0, 0, 550.008},
 					Extruder:  []float64{0},
 					Machine:   []float64{0, 0, 550.008},
@@ -136,7 +136,7 @@ func Test_StatusResponse1(t *testing.T) {
 			want: StatusResponse1{
 				Status: Printing,
 				Coordinates: StatusCoords{
-					AxisHomed: []RRFBool{true, true, true},
+					AxesHomed: []RRFBool{true, true, true},
 					XYZ:       []float64{151.008, 23.354, 2.7},
 					Extruder:  []float64{461.8},
 					Machine:   []float64{53.864, 31.160, 2.400},
@@ -208,7 +208,7 @@ func Test_StatusResponse2(t *testing.T) {
 			want: StatusResponse2{
 				Status: Idle,
 				Coordinates: StatusCoords{
-					AxisHomed: []RRFBool{false, false, false},
+					AxesHomed: []RRFBool{false, false, false},
 					Extruder:  []float64{0},
 					XYZ:       []float64{0, 0, 550.008},
 					Machine:   []float64{0, 0, 550.008},
@@ -303,7 +303,7 @@ func Test_StatusResponse3(t *testing.T) {
 			want: StatusResponse3{
 				Status: Idle,
 				Coordinates: StatusCoords{
-					AxisHomed: []RRFBool{false, false, false},
+					AxesHomed: []RRFBool{false, false, false},
 					Extruder:  []float64{0},
 					XYZ:       []float64{0, 0, 550.008},
 					Machine:   []float64{0, 0, 550.008},
