@@ -34,7 +34,7 @@ type AuthResponse struct {
 	BoardType      string `json:"boardType,omitempty"`
 }
 
-type StatusResponse1 struct {
+type StatusResponse struct {
 	Status      Status       `json:"status,omitempty"`
 	Coordinates StatusCoords `json:"coords,omitempty"`
 	Speeds      Speeds       `json:"speeds,omitempty"`
@@ -48,22 +48,8 @@ type StatusResponse1 struct {
 	UpTime      Time         `json:"time,omitempty"`
 	Scanner     Scanner      `json:"scanner,omitempty"`
 	Spindles    []Spindle    `json:"spindles,omitempty"`
-}
 
-type StatusResponse2 struct {
-	Status      Status       `json:"status,omitempty"`
-	Coordinates StatusCoords `json:"coords,omitempty"`
-	Speeds      Speeds       `json:"speeds,omitempty"`
-	CurrentTool int          `json:"currentTool,omitempty"`
-	Output      Output       `json:"output,omitempty"`
-	Params      Params       `json:"params,omitempty"`
-	Seq         int          `json:"seq,omitempty"`
-	Sensors     Sensors      `json:"sensors,omitempty"`
-	Temps       Temps        `json:"temps,omitempty"`
-	Resp        string       `json:"resp,omitempty"`
-	UpTime      Time         `json:"time,omitempty"`
-	Scanner     Scanner      `json:"scanner,omitempty"`
-
+	// type 2 properties
 	ColdExtrudeTemperature float64          `json:"coldExtrudeTemp,omitempty"`
 	ColdRetractTemperature float64          `json:"coldRetractTemp,omitempty"`
 	Compensation           Compensation     `json:"compensation,omitempty"`
@@ -82,22 +68,8 @@ type StatusResponse2 struct {
 	Tools                  []Tool           `json:"tools,omitempty"`
 	MCUTemp                MinCurMax        `json:"mcutemp,omitempty"`
 	VIN                    MinCurMax        `json:"vin,omitempty"`
-}
 
-type StatusResponse3 struct {
-	Status      Status       `json:"status,omitempty"`
-	Coordinates StatusCoords `json:"coords,omitempty"`
-	Speeds      Speeds       `json:"speeds,omitempty"`
-	CurrentTool int          `json:"currentTool,omitempty"`
-	Output      Output       `json:"output,omitempty"`
-	Params      Params       `json:"params,omitempty"`
-	Seq         int          `json:"seq,omitempty"`
-	Sensors     Sensors      `json:"sensors,omitempty"`
-	Temps       Temps        `json:"temps,omitempty"`
-	Resp        string       `json:"resp,omitempty"`
-	UpTime      Time         `json:"time,omitempty"`
-	Scanner     Scanner      `json:"scanner,omitempty"`
-
+	// type 3 properties
 	CurrentLayer       int       `json:"currentLayer,omitempty"`
 	CurrentLayerTime   Time      `json:"currentLayerTime,omitempty"`
 	ExtrRaw            []float64 `json:"extrRaw,omitempty"`

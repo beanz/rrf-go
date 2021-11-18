@@ -145,8 +145,8 @@ func (c *Client) status(ctx context.Context, t int, res interface{}) error {
 	return nil
 }
 
-func (c *Client) Status1(ctx context.Context) (*types.StatusResponse1, error) {
-	var resp types.StatusResponse1
+func (c *Client) Status1(ctx context.Context) (*types.StatusResponse, error) {
+	var resp types.StatusResponse
 	err := c.status(ctx, 1, &resp)
 	if err != nil {
 		return nil, err
@@ -154,8 +154,8 @@ func (c *Client) Status1(ctx context.Context) (*types.StatusResponse1, error) {
 	return &resp, nil
 }
 
-func (c *Client) Status2(ctx context.Context) (*types.StatusResponse2, error) {
-	var resp types.StatusResponse2
+func (c *Client) Status2(ctx context.Context) (*types.StatusResponse, error) {
+	var resp types.StatusResponse
 	err := c.status(ctx, 2, &resp)
 	if err != nil {
 		return nil, err
@@ -163,8 +163,8 @@ func (c *Client) Status2(ctx context.Context) (*types.StatusResponse2, error) {
 	return &resp, nil
 }
 
-func (c *Client) Status3(ctx context.Context) (*types.StatusResponse3, error) {
-	var resp types.StatusResponse3
+func (c *Client) Status3(ctx context.Context) (*types.StatusResponse, error) {
+	var resp types.StatusResponse
 	err := c.status(ctx, 3, &resp)
 	if err != nil {
 		return nil, err

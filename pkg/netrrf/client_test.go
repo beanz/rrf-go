@@ -245,7 +245,7 @@ func Test_Status1(t *testing.T) {
 		name      string
 		responses []*http.Response
 		errors    []error
-		checks    func(*testing.T, *types.StatusResponse1)
+		checks    func(*testing.T, *types.StatusResponse)
 		authDone  bool
 		wantErr   bool
 	}{
@@ -267,7 +267,7 @@ func Test_Status1(t *testing.T) {
 						`{"status":"I","coords":{"axesHomed":[0,0,0],"wpl":1,"xyz":[0,0,550.008],"machine":[0,0,550.008],"extr":[0]},"speeds":{"requested":0,"top":0},"currentTool":0,"params":{"atxPower":0,"fanPercent":[0,50,0,0,0,0,0,0,0],"speedFactor":100,"extrFactors":[100],"babystep":0},"seq":0,"sensors":{"probeValue":0,"fanRPM":0},"temps":{"current":[2000,22.3,2000,2000,2000,2000,2000,2000],"state":[0,2,0,0,0,0,0,0],"tools":{"active":[[0]],"standby":[[0]]},"extra":[{"name":"*MCU","temp":38.3}]},"time":567}`)),
 				},
 			},
-			checks: func(t *testing.T, s1 *types.StatusResponse1) {
+			checks: func(t *testing.T, s1 *types.StatusResponse) {
 				assert.Equal(t, 1, 1)
 			},
 			wantErr: false,
@@ -284,7 +284,7 @@ func Test_Status1(t *testing.T) {
 						"{\"axisMins\":[-100,-100,-0.2],\"axisMaxes\":[100,100,550.01],\"accelerations\":[3000,3000,3000,1000,1000,250,250,250,250,250,250,250],\"currents\":[800,800,800,500,500,0,0,0,0,0,0,0],\"firmwareElectronics\":\"Duet WiFi 1.0 or 1.01\",\"firmwareName\":\"RepRapFirmware for Duet 2 WiFi/Ethernet\",\"firmwareVersion\":\"2.05.1\",\"dwsVersion\":\"1.23\",\"firmwareDate\":\"2020-02-09b1\",\"sysdir\":\"0:/sys/\",\"idleCurrentFactor\":60,\"idleTimeout\":30,\"minFeedrates\":[20,20,20,10,10,2,2,2,2,2,2,2],\"maxFeedrates\":[333.33,333.33,333.33,60,60,20,20,20,20,20,20,20]}")),
 				},
 			},
-			checks: func(t *testing.T, s1 *types.StatusResponse1) {
+			checks: func(t *testing.T, s1 *types.StatusResponse) {
 				assert.Equal(t, 1, 1)
 			},
 			wantErr: false,
@@ -337,7 +337,7 @@ func Test_Status2(t *testing.T) {
 		name      string
 		responses []*http.Response
 		errors    []error
-		checks    func(*testing.T, *types.StatusResponse2)
+		checks    func(*testing.T, *types.StatusResponse)
 		authDone  bool
 		wantErr   bool
 	}{
@@ -353,7 +353,7 @@ func Test_Status2(t *testing.T) {
 						`{"status":"I","coords":{"axesHomed":[0,0,0],"wpl":1,"xyz":[0,0,550.008],"machine":[0,0,550.008],"extr":[0]},"speeds":{"requested":0,"top":0},"currentTool":0,"params":{"atxPower":0,"fanPercent":[0,50,0,0,0,0,0,0,0],"fanNames":["","","","","","","","",""],"speedFactor":100,"extrFactors":[100],"babystep":0},"seq":0,"sensors":{"probeValue":0,"fanRPM":0},"temps":{"current":[2000,22.3,2000,2000,2000,2000,2000,2000],"state":[0,2,0,0,0,0,0,0],"names":["","","","","","","",""],"tools":{"active":[[0]],"standby":[[0]]},"extra":[{"name":"*MCU","temp":38.4}]},"time":567,"coldExtrudeTemp":160,"coldRetractTemp":90,"compensation":"None","controllableFans":2,"tempLimit":290,"endstops":4080,"firmwareName":"RepRapFirmware for Duet 2 WiFi/Ethernet","geometry":"delta","axes":3,"totalAxes":3,"axisNames":"XYZ","volumes":2,"mountedVolumes":1,"name":"Cerb","probe":{"threshold":500,"height":-0.2,"type":4},"tools":[{"number":0,"heaters":[1],"drives":[0],"axisMap":[[0],[1]],"fans":1,"filament":"","offsets":[0,0,0]}],"mcutemp":{"min":31,"cur":38.4,"max":38.6},"vin":{"min":11.9,"cur":12.1,"max":12.2}}`)),
 				},
 			},
-			checks: func(t *testing.T, s1 *types.StatusResponse2) {
+			checks: func(t *testing.T, s1 *types.StatusResponse) {
 				assert.Equal(t, 1, 1)
 			},
 			wantErr: false,
@@ -393,7 +393,7 @@ func Test_Status3(t *testing.T) {
 		name      string
 		responses []*http.Response
 		errors    []error
-		checks    func(*testing.T, *types.StatusResponse3)
+		checks    func(*testing.T, *types.StatusResponse)
 		authDone  bool
 		wantErr   bool
 	}{
@@ -409,7 +409,7 @@ func Test_Status3(t *testing.T) {
 						`{"status":"I","coords":{"axesHomed":[0,0,0],"wpl":1,"xyz":[0,0,550.008],"machine":[0,0,550.008],"extr":[0]},"speeds":{"requested":0,"top":0},"currentTool":0,"params":{"atxPower":0,"fanPercent":[0,50,0,0,0,0,0,0,0],"speedFactor":100,"extrFactors":[100],"babystep":0},"seq":0,"sensors":{"probeValue":0,"fanRPM":0},"temps":{"current":[2000,22.3,2000,2000,2000,2000,2000,2000],"state":[0,2,0,0,0,0,0,0],"tools":{"active":[[0]],"standby":[[0]]},"extra":[{"name":"*MCU","temp":38.4}]},"time":567,"currentLayer":0,"currentLayerTime":0,"extrRaw":[0],"fractionPrinted":0,"filePosition":0,"firstLayerDuration":0,"firstLayerHeight":0,"printDuration":0,"warmUpDuration":0,"timesLeft":{"file":0,"filament":0,"layer":0}}`)),
 				},
 			},
-			checks: func(t *testing.T, s1 *types.StatusResponse3) {
+			checks: func(t *testing.T, s1 *types.StatusResponse) {
 				assert.Equal(t, 1, 1)
 			},
 			wantErr: false,

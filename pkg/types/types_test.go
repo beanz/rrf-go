@@ -9,33 +9,33 @@ import (
 )
 
 func Test_Status_String(t *testing.T) {
-	assert.Equal(t, Configuring.String(), "configuring")
-	assert.Equal(t, Idle.String(), "idle")
-	assert.Equal(t, Busy.String(), "busy")
-	assert.Equal(t, Printing.String(), "printing")
-	assert.Equal(t, Pausing.String(), "pausing")
-	assert.Equal(t, Stopped.String(), "stopped")
-	assert.Equal(t, Resuming.String(), "resuming")
-	assert.Equal(t, Halted.String(), "halted")
-	assert.Equal(t, Flashing.String(), "flashing")
-	assert.Equal(t, ToolChanging.String(), "toolchanging")
-	assert.Equal(t, Status("?").String(), "unknown")
+	assert.Equal(t, "configuring", Configuring.String())
+	assert.Equal(t, "idle", Idle.String())
+	assert.Equal(t, "busy", Busy.String())
+	assert.Equal(t, "printing", Printing.String())
+	assert.Equal(t, "pausing", Pausing.String())
+	assert.Equal(t, "stopped", Stopped.String())
+	assert.Equal(t, "resuming", Resuming.String())
+	assert.Equal(t, "halted", Halted.String())
+	assert.Equal(t, "flashing", Flashing.String())
+	assert.Equal(t, "toolchanging", ToolChanging.String())
+	assert.Equal(t, "unknown", Status("?").String())
 }
 
 func Test_TempState_String(t *testing.T) {
-	assert.Equal(t, Off.String(), "off")
-	assert.Equal(t, Standby.String(), "standby")
-	assert.Equal(t, Active.String(), "active")
-	assert.Equal(t, Fault.String(), "fault")
-	assert.Equal(t, TempState(-1).String(), "unknown")
+	assert.Equal(t, "off", Off.String())
+	assert.Equal(t, "standby", Standby.String())
+	assert.Equal(t, "active", Active.String())
+	assert.Equal(t, "fault", Fault.String())
+	assert.Equal(t, "unknown", TempState(-1).String())
 }
 
 func Test_ScannerStatus_String(t *testing.T) {
-	assert.Equal(t, ScannerDisconnected.String(), "disconnected")
-	assert.Equal(t, ScannerIdle.String(), "idle")
-	assert.Equal(t, ScannerScanning.String(), "scanning")
-	assert.Equal(t, ScannerUploading.String(), "uploading")
-	assert.Equal(t, ScannerStatus("?").String(), "unknown")
+	assert.Equal(t, "disconnected", ScannerDisconnected.String())
+	assert.Equal(t, "idle", ScannerIdle.String())
+	assert.Equal(t, "scanning", ScannerScanning.String())
+	assert.Equal(t, "uploading", ScannerUploading.String())
+	assert.Equal(t, "unknown", ScannerStatus("?").String())
 }
 
 func Test_FanRPM(t *testing.T) {
@@ -83,7 +83,7 @@ func Test_FanRPM(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			assert.Equal(t, fanRPMs, tc.want)
+			assert.Equal(t, tc.want, fanRPMs)
 		})
 	}
 }
@@ -92,13 +92,13 @@ func Test_StatusResponse1(t *testing.T) {
 	tests := []struct {
 		name    string
 		file    string
-		want    StatusResponse1
+		want    StatusResponse
 		wantErr bool
 	}{
 		{
 			name: "Status 1 idle response",
 			file: "testdata/type-1-idle-status.json",
-			want: StatusResponse1{
+			want: StatusResponse{
 				Status: Idle,
 				Coordinates: StatusCoords{
 					AxesHomed:       []RRFBool{false, false, false},
@@ -131,68 +131,19 @@ func Test_StatusResponse1(t *testing.T) {
 				UpTime: 567,
 			},
 		},
-		{
-			name: "Status 1 response while printing",
-			file: "testdata/response-one-printing.json",
-			want: StatusResponse1{
-				Status: Printing,
-				Coordinates: StatusCoords{
-					AxesHomed:       []RRFBool{true, true, true},
-					Extruder:        []float64{461.8},
-					WorkplaceSystem: 1,
-					XYZ:             []float64{151.008, 23.354, 2.7},
-					Machine:         []float64{53.864, 31.160, 2.400},
-				},
-				Speeds: Speeds{
-					Requested: 50,
-					Top:       50,
-				},
-				CurrentTool: 0,
-				Params: Params{
-					ATXPower:   false,
-					FanPercent: []float64{30, 0},
-					//SpeedFactor:     []float64{100},
-					ExtruderFactors: []float64{100},
-					BabyStep:        0.0,
-				},
-				Seq: 2,
-				Sensors: Sensors{
-					ProbeValue: 0.0,
-					FanRPM:     []float64{-1.0, -1.0},
-				},
-				Temps: Temps{
-					Current: []float64{
-						72, 219.7,
-					},
-					State: []TempState{
-						Active, Active,
-					},
-					Bed: Temp{
-						Current: 72.0,
-						Active:  72.0,
-						State:   2,
-					},
-					Tools: ToolTemps{
-						Active:  [][]float64{[]float64{220}},
-						Standby: [][]float64{[]float64{220}},
-					},
-				},
-				UpTime: 4885.0,
-			},
-		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			data, err := os.ReadFile(tc.file)
 			assert.NoError(t, err)
-			var status StatusResponse1
+			var status StatusResponse
 			err = json.Unmarshal(data, &status)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
-			assert.Equal(t, status, tc.want)
+			assert.Equal(t, tc.want, status)
 		})
 	}
 }
@@ -201,13 +152,13 @@ func Test_StatusResponse2(t *testing.T) {
 	tests := []struct {
 		name    string
 		file    string
-		want    StatusResponse2
+		want    StatusResponse
 		wantErr bool
 	}{
 		{
 			name: "Status 2 idle response",
 			file: "testdata/type-2-idle-status.json",
-			want: StatusResponse2{
+			want: StatusResponse{
 				Status: Idle,
 				Coordinates: StatusCoords{
 					AxesHomed:       []RRFBool{false, false, false},
@@ -291,14 +242,14 @@ func Test_StatusResponse2(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			data, err := os.ReadFile(tc.file)
 			assert.NoError(t, err)
-			var status StatusResponse2
+			var status StatusResponse
 			err = json.Unmarshal(data, &status)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
-			assert.Equal(t, status, tc.want)
+			assert.Equal(t, tc.want, status)
 		})
 	}
 }
@@ -307,13 +258,13 @@ func Test_StatusResponse3(t *testing.T) {
 	tests := []struct {
 		name    string
 		file    string
-		want    StatusResponse3
+		want    StatusResponse
 		wantErr bool
 	}{
 		{
 			name: "Status 3 idle response",
 			file: "testdata/type-3-idle-status.json",
-			want: StatusResponse3{
+			want: StatusResponse{
 				Status: Idle,
 				Coordinates: StatusCoords{
 					AxesHomed:       []RRFBool{false, false, false},
@@ -352,19 +303,82 @@ func Test_StatusResponse3(t *testing.T) {
 				ExtrRaw: []float64{0},
 			},
 		},
+		{
+			name: "Status 3 response while printing",
+			file: "testdata/response-three-printing.json",
+			want: StatusResponse{
+				Status: Printing,
+				Coordinates: StatusCoords{
+					AxesHomed:       []RRFBool{true, true, true},
+					Extruder:        []float64{461.8},
+					WorkplaceSystem: 1,
+					XYZ:             []float64{151.008, 23.354, 2.7},
+					Machine:         []float64{53.864, 31.160, 2.400},
+				},
+				Speeds: Speeds{
+					Requested: 50,
+					Top:       50,
+				},
+				CurrentTool: 0,
+				Params: Params{
+					ATXPower:   false,
+					FanPercent: []float64{30, 0},
+					//SpeedFactor:     []float64{100},
+					ExtruderFactors: []float64{100},
+					BabyStep:        0.0,
+				},
+				Seq: 2,
+				Sensors: Sensors{
+					ProbeValue: 0.0,
+					FanRPM:     []float64{-1.0, -1.0},
+				},
+				Temps: Temps{
+					Current: []float64{
+						72, 219.7,
+					},
+					State: []TempState{
+						Active, Active,
+					},
+					Bed: Temp{
+						Current: 72.0,
+						Active:  72.0,
+						State:   2,
+					},
+					Tools: ToolTemps{
+						Active:  [][]float64{[]float64{220}},
+						Standby: [][]float64{[]float64{220}},
+					},
+				},
+				UpTime:             4885.0,
+				CurrentLayer:       10,
+				CurrentLayerTime:   0.7,
+				ExtrRaw:            []float64{464.8},
+				FractionPrinted:    47.3,
+				FilePosition:       290795,
+				FirstLayerDuration: 207.5,
+				FirstLayerHeight:   0.25,
+				PrintDuration:      1583.2,
+				WarmUpDuration:     541.3,
+				TimesLeft: TimesLeft{
+					File:     728.8,
+					Filament: 722.5,
+					Layer:    551.3,
+				},
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			data, err := os.ReadFile(tc.file)
 			assert.NoError(t, err)
-			var status StatusResponse3
+			var status StatusResponse
 			err = json.Unmarshal(data, &status)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
-			assert.Equal(t, status, tc.want)
+			assert.Equal(t, tc.want, status)
 		})
 	}
 }
@@ -420,7 +434,7 @@ func Test_ConfigResponse(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			assert.Equal(t, status, tc.want)
+			assert.Equal(t, tc.want, status)
 		})
 	}
 }

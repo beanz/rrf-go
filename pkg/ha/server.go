@@ -148,8 +148,8 @@ type PollResult struct {
 	AvailabilityTopic string
 	StateTopic        string
 	Config            *types.ConfigResponse
-	Status2           *types.StatusResponse2
-	Status3           *types.StatusResponse3
+	Status2           *types.StatusResponse
+	Status3           *types.StatusResponse
 }
 
 func pub(ctx context.Context, cm *autopaho.ConnectionManager, topic string, body interface{}, retain bool) error {
