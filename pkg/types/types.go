@@ -30,8 +30,8 @@ import (
 
 type AuthResponse struct {
 	ErrorCode      int    `json:"err"`
-	SessionTimeout Time   `json:"sessionTimeout"`
-	BoardType      string `json:"boardType"`
+	SessionTimeout Time   `json:"sessionTimeout,omitempty"`
+	BoardType      string `json:"boardType,omitempty"`
 }
 
 type StatusResponse1 struct {
