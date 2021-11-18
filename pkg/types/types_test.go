@@ -101,10 +101,11 @@ func Test_StatusResponse1(t *testing.T) {
 			want: StatusResponse1{
 				Status: Idle,
 				Coordinates: StatusCoords{
-					AxesHomed: []RRFBool{false, false, false},
-					XYZ:       []float64{0, 0, 550.008},
-					Extruder:  []float64{0},
-					Machine:   []float64{0, 0, 550.008},
+					AxesHomed:       []RRFBool{false, false, false},
+					Extruder:        []float64{0},
+					WorkplaceSystem: 1,
+					XYZ:             []float64{0, 0, 550.008},
+					Machine:         []float64{0, 0, 550.008},
 				},
 				Params: Params{
 					FanPercent:      []float64{0, 50, 0, 0, 0, 0, 0, 0, 0},
@@ -136,10 +137,11 @@ func Test_StatusResponse1(t *testing.T) {
 			want: StatusResponse1{
 				Status: Printing,
 				Coordinates: StatusCoords{
-					AxesHomed: []RRFBool{true, true, true},
-					XYZ:       []float64{151.008, 23.354, 2.7},
-					Extruder:  []float64{461.8},
-					Machine:   []float64{53.864, 31.160, 2.400},
+					AxesHomed:       []RRFBool{true, true, true},
+					Extruder:        []float64{461.8},
+					WorkplaceSystem: 1,
+					XYZ:             []float64{151.008, 23.354, 2.7},
+					Machine:         []float64{53.864, 31.160, 2.400},
 				},
 				Speeds: Speeds{
 					Requested: 50,
@@ -208,13 +210,17 @@ func Test_StatusResponse2(t *testing.T) {
 			want: StatusResponse2{
 				Status: Idle,
 				Coordinates: StatusCoords{
-					AxesHomed: []RRFBool{false, false, false},
-					Extruder:  []float64{0},
-					XYZ:       []float64{0, 0, 550.008},
-					Machine:   []float64{0, 0, 550.008},
+					AxesHomed:       []RRFBool{false, false, false},
+					Extruder:        []float64{0},
+					WorkplaceSystem: 1,
+					XYZ:             []float64{0, 0, 550.008},
+					Machine:         []float64{0, 0, 550.008},
 				},
 				Params: Params{
-					FanPercent:      []float64{0, 50, 0, 0, 0, 0, 0, 0, 0},
+					FanPercent: []float64{0, 50, 0, 0, 0, 0, 0, 0, 0},
+					FanNames: []string{
+						"", "", "", "", "", "", "", "", "",
+					},
 					ExtruderFactors: []float64{100},
 				},
 				Sensors: Sensors{
@@ -246,10 +252,15 @@ func Test_StatusResponse2(t *testing.T) {
 				UpTime:                 567,
 				ColdExtrudeTemperature: 160,
 				ColdRetractTemperature: 90,
+				Compensation:           "None",
+				ControllableFans:       2,
+				TempLimit:              290,
 				Endstops:               4080,
 				FirmwareName:           "RepRapFirmware for Duet 2 WiFi/Ethernet",
 				Geometry:               "delta",
 				Axes:                   3,
+				TotalAxes:              3,
+				AxisNames:              "XYZ",
 				Volumes:                2,
 				MountedVolumes:         1,
 				Name:                   "Cerb",
@@ -259,6 +270,8 @@ func Test_StatusResponse2(t *testing.T) {
 						Heaters: []int{1},
 						Drives:  []int{0},
 						AxisMap: [][]int{{0}, {1}},
+						Fans:    1,
+						Offsets: []float64{0, 0, 0},
 					},
 				},
 				MCUTemp: MinCurMax{
@@ -303,10 +316,11 @@ func Test_StatusResponse3(t *testing.T) {
 			want: StatusResponse3{
 				Status: Idle,
 				Coordinates: StatusCoords{
-					AxesHomed: []RRFBool{false, false, false},
-					Extruder:  []float64{0},
-					XYZ:       []float64{0, 0, 550.008},
-					Machine:   []float64{0, 0, 550.008},
+					AxesHomed:       []RRFBool{false, false, false},
+					Extruder:        []float64{0},
+					WorkplaceSystem: 1,
+					XYZ:             []float64{0, 0, 550.008},
+					Machine:         []float64{0, 0, 550.008},
 				},
 				Params: Params{
 					FanPercent:      []float64{0, 50, 0, 0, 0, 0, 0, 0, 0},

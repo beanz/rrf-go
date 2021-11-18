@@ -47,6 +47,7 @@ type StatusResponse1 struct {
 	Resp        string       `json:"resp,omitempty"`
 	UpTime      Time         `json:"time,omitempty"`
 	Scanner     Scanner      `json:"scanner,omitempty"`
+	Spindles    []Spindle    `json:"spindles,omitempty"`
 }
 
 type StatusResponse2 struct {
@@ -63,19 +64,24 @@ type StatusResponse2 struct {
 	UpTime      Time         `json:"time,omitempty"`
 	Scanner     Scanner      `json:"scanner,omitempty"`
 
-	ColdExtrudeTemperature float64      `json:"coldExtrudeTemp,omitempty"`
-	ColdRetractTemperature float64      `json:"coldRetractTemp,omitempty"`
-	Endstops               EndstopState `json:"endstops,omitempty"`
-	FirmwareName           string       `json:"firmwareName,omitempty"`
-	Geometry               string       `json:"geometry,omitempty"`
-	Axes                   int          `json:"axes,omitempty"`
-	Volumes                int          `json:"volumes,omitempty"`
-	MountedVolumes         VolumeState  `json:"mountedVolumes,omitempty"`
-	Name                   string       `json:"name,omitempty"`
-	Probe                  Probe        `json:"probe:,omitempty"`
-	Tools                  []Tool       `json:"tools,omitempty"`
-	MCUTemp                MinCurMax    `json:"mcutemp,omitempty"`
-	VIN                    MinCurMax    `json:"vin,omitempty"`
+	ColdExtrudeTemperature float64          `json:"coldExtrudeTemp,omitempty"`
+	ColdRetractTemperature float64          `json:"coldRetractTemp,omitempty"`
+	Compensation           Compensation     `json:"compensation,omitempty"`
+	ControllableFans       ControllableFans `json:"controllableFans,omitempty"`
+	TempLimit              float64          `json:"tempLimit,omitempty"`
+	Endstops               EndstopState     `json:"endstops,omitempty"`
+	FirmwareName           string           `json:"firmwareName,omitempty"`
+	Geometry               string           `json:"geometry,omitempty"`
+	Axes                   int              `json:"axes,omitempty"`
+	TotalAxes              int              `json:"totalAxes,omitempty"`
+	AxisNames              string           `json:"axisNames,omitempty"`
+	Volumes                int              `json:"volumes,omitempty"`
+	MountedVolumes         VolumeState      `json:"mountedVolumes,omitempty"`
+	Name                   string           `json:"name,omitempty"`
+	Probe                  Probe            `json:"probe:,omitempty"`
+	Tools                  []Tool           `json:"tools,omitempty"`
+	MCUTemp                MinCurMax        `json:"mcutemp,omitempty"`
+	VIN                    MinCurMax        `json:"vin,omitempty"`
 }
 
 type StatusResponse3 struct {
@@ -96,6 +102,7 @@ type StatusResponse3 struct {
 	CurrentLayerTime   Time      `json:"currentLayerTime,omitempty"`
 	ExtrRaw            []float64 `json:"extrRaw,omitempty"`
 	FractionPrinted    float64   `json:"fractionPrinted,omitempty"`
+	FilePosition       int       `json:"filePosition,omitempty"`
 	FirstLayerDuration Time      `json:"firstLayerDuration,omitempty"`
 	FirstLayerHeight   float64   `json:"firstLayerHeight,omitempty"`
 	PrintDuration      Time      `json:"printDuration,omitempty"`
@@ -133,10 +140,11 @@ func (b *RRFBool) UnmarshalJSON(data []byte) error {
 }
 
 type StatusCoords struct {
-	AxesHomed []RRFBool `json:"axesHomed,omitempty"`
-	Extruder  []float64 `json:"extr,omitempty"`
-	XYZ       []float64 `json:"xyz,omitempty"`
-	Machine   []float64 `json:"machine,omitempty"`
+	AxesHomed       []RRFBool `json:"axesHomed,omitempty"`
+	Extruder        []float64 `json:"extr,omitempty"`
+	WorkplaceSystem int       `json:"wpl,omitempty"`
+	XYZ             []float64 `json:"xyz,omitempty"`
+	Machine         []float64 `json:"machine,omitempty"`
 }
 
 type Speeds struct {
@@ -153,6 +161,7 @@ type Output struct {
 type Params struct {
 	ATXPower   RRFBool   `json:"atxPower,omitempty"`
 	FanPercent []float64 `json:"fanPercent,omitempty"`
+	FanNames   []string  `json:"fanNames,omitempty"`
 	//SpeedFactor     []float64 `json:"speedFactor,omitempty"`
 	ExtruderFactors []float64 `json:"extrFactors,omitempty"`
 	BabyStep        float64   `json:"babystep,omitempty"`
@@ -320,8 +329,17 @@ type Scanner struct {
 	Progress float64       `json:"progress,omitempty"`
 }
 
-type EndstopState int // TODO: decode bitmap to []bool
-type VolumeState int  // TODO: decode bitmap to []bool
+type Spindle struct {
+	Current float64 `json:"current,omitempty"`
+	Active  float64 `json:"active,omitempty"`
+	Tool    int     `json:"tool,omitempty"`
+}
+
+type Compensation string
+
+type ControllableFans int // TODO: decode bitmap to []bool
+type EndstopState int     // TODO: decode bitmap to []bool
+type VolumeState int      // TODO: decode bitmap to []bool
 
 type Probe struct {
 	Threshold int     `json:"threshold,omitempty"`
@@ -330,10 +348,14 @@ type Probe struct {
 }
 
 type Tool struct {
-	Number  int     `json:"number,omitempty"`
-	Heaters []int   `json:"heaters,omitempty"`
-	Drives  []int   `json:"drives,omitempty"`
-	AxisMap [][]int `json:"axisMap,omitempty"`
+	Number   int       `json:"number,omitempty"`
+	Name     string    `json:"name,omitempty"`
+	Heaters  []int     `json:"heaters,omitempty"`
+	Drives   []int     `json:"drives,omitempty"`
+	AxisMap  [][]int   `json:"axisMap,omitempty"`
+	Fans     int       `json:"fans,omitempty"`
+	Filament string    `json:"filament,omitempty"`
+	Offsets  []float64 `json:"offsets,omitempty"`
 }
 
 type MinCurMax struct {
