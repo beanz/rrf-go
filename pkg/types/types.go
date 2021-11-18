@@ -131,10 +131,10 @@ type Output struct {
 }
 
 type Params struct {
-	ATXPower   RRFBool   `json:"atxPower,omitempty"`
-	FanPercent []float64 `json:"fanPercent,omitempty"`
-	FanNames   []string  `json:"fanNames,omitempty"`
-	//SpeedFactor     []float64 `json:"speedFactor,omitempty"`
+	ATXPower        RRFBool   `json:"atxPower,omitempty"`
+	FanPercent      []float64 `json:"fanPercent,omitempty"`
+	FanNames        []string  `json:"fanNames,omitempty"`
+	SpeedFactor     float64   `json:"speedFactor,omitempty"`
 	ExtruderFactors []float64 `json:"extrFactors,omitempty"`
 	BabyStep        float64   `json:"babystep,omitempty"`
 }

@@ -109,6 +109,7 @@ func Test_StatusResponse1(t *testing.T) {
 				},
 				Params: Params{
 					FanPercent:      []float64{0, 50, 0, 0, 0, 0, 0, 0, 0},
+					SpeedFactor:     100,
 					ExtruderFactors: []float64{100},
 				},
 				Sensors: Sensors{
@@ -172,6 +173,7 @@ func Test_StatusResponse2(t *testing.T) {
 					FanNames: []string{
 						"", "", "", "", "", "", "", "", "",
 					},
+					SpeedFactor:     100,
 					ExtruderFactors: []float64{100},
 				},
 				Sensors: Sensors{
@@ -275,6 +277,7 @@ func Test_StatusResponse3(t *testing.T) {
 				},
 				Params: Params{
 					FanPercent:      []float64{0, 50, 0, 0, 0, 0, 0, 0, 0},
+					SpeedFactor:     100,
 					ExtruderFactors: []float64{100},
 				},
 				Sensors: Sensors{
@@ -321,9 +324,9 @@ func Test_StatusResponse3(t *testing.T) {
 				},
 				CurrentTool: 0,
 				Params: Params{
-					ATXPower:   false,
-					FanPercent: []float64{30, 0},
-					//SpeedFactor:     []float64{100},
+					ATXPower:        false,
+					FanPercent:      []float64{30, 0},
+					SpeedFactor:     100,
 					ExtruderFactors: []float64{100},
 					BabyStep:        0.0,
 				},
