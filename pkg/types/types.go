@@ -22,6 +22,7 @@ THE SOFTWARE.
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -109,6 +110,14 @@ func (b *RRFBool) UnmarshalJSON(data []byte) error {
 		*b = false
 	}
 	return nil
+}
+
+func (b RRFBool) MarshalJSON() ([]byte, error) {
+	r := 0
+	if b {
+		r++
+	}
+	return json.Marshal(r)
 }
 
 type StatusCoords struct {

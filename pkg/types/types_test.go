@@ -441,3 +441,22 @@ func Test_ConfigResponse(t *testing.T) {
 		})
 	}
 }
+
+func Test_RRFBool_Unmarshal(t *testing.T) {
+	var rb RRFBool
+	err := json.Unmarshal([]byte("1"), &rb)
+	assert.NoError(t, err)
+	assert.True(t, bool(rb))
+	err = json.Unmarshal([]byte("0"), &rb)
+	assert.NoError(t, err)
+	assert.False(t, bool(rb))
+}
+
+func Test_RRFBool_Marshal(t *testing.T) {
+	b, err := json.Marshal(RRFBool(true))
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("1"), b)
+	b, err = json.Marshal(RRFBool(false))
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("0"), b)
+}
