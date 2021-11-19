@@ -271,3 +271,50 @@ func Test_ResultMessages(t *testing.T) {
 		},
 	}, msg)
 }
+
+func Test_DeviceLoop(t *testing.T) {
+	var buf bytes.Buffer
+	mock := mock.NewMockRRF(log.New(&buf, "", 0))
+	ts := httptest.NewServer(mock.Router())
+	defer ts.Close()
+
+	host := strings.Split(ts.URL, "://")[1]
+	safeHost := topicSafe(host)
+
+	msgc := make(chan *Msg, 100)
+	var pollBuf bytes.Buffer
+	polllog := log.New(&pollBuf, "", 0)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		deviceLoop(ctx,
+			host, &Config{
+				Password:             "passw0rd",
+				Interval:             time.Second * 60,
+				TopicPrefix:          "rrfdata",
+				DiscoveryTopicPrefix: "rrfdisc",
+			}, msgc, polllog)
+	}()
+	defer cancel()
+
+	msg := <-msgc
+	assert.Equal(t,
+		&Msg{
+			topic:  "rrfdata/" + safeHost + "/availability",
+			body:   "online",
+			retain: true,
+		},
+		msg)
+	timeout := time.NewTimer(time.Second)
+	defer timeout.Stop()
+	count := 0
+LOOP:
+	for {
+		select {
+		case <-msgc:
+			count++
+		case <-timeout.C:
+			break LOOP
+		}
+	}
+	assert.Equal(t, 20, count) // 19 discovery messages + state
+}
