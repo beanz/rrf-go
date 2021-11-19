@@ -183,10 +183,7 @@ func pub(ctx context.Context, cm *autopaho.ConnectionManager, topic string, body
 func pollDevice(ctx context.Context, cm *autopaho.ConnectionManager, host string, cfg *Config, logger *log.Logger, pollc chan PollResult) {
 	ticker := time.NewTicker(cfg.Interval)
 
-	// strip domain
-	name := topicSafe(strings.SplitN(host, ".", 2)[0])
-
-	availabilityTopic := AvailabilityTopic(cfg, name)
+	availabilityTopic := AvailabilityTopic(cfg, topicSafe(host))
 
 	var lastDiscovery *time.Time
 	lastAvailability := ""
@@ -219,6 +216,7 @@ func pollDevice(ctx context.Context, cm *autopaho.ConnectionManager, host string
 					goto TICK
 				}
 				newAvailability = "online"
+				name := topicSafe(s2.Name)
 				pollc <- PollResult{
 					Host:              host,
 					TopicFriendlyName: name,
@@ -251,6 +249,7 @@ func topicSafe(s string) string {
 	r = strings.ReplaceAll(r, "#", "_hash_")
 	r = strings.ReplaceAll(r, "+", "_plus_")
 	r = strings.ReplaceAll(r, "-", "_")
+	r = strings.ReplaceAll(r, ":", "_")
 	r = strings.TrimLeft(r, "_")
 	r = strings.TrimRight(r, "_")
 	return strings.ToLower(r)
