@@ -90,10 +90,10 @@ func Run(cfg *Config, logger *log.Logger) error {
 		return fmt.Errorf("broker connection error: %s", err)
 	}
 
-	msgc := make(chan *Msg, 100)
+	msgc := make(chan *Msg, 300)
 
 	for i := range cfg.Devices {
-		go pollDevice(ctx, cfg.Devices[i], cfg, msgc, logger)
+		go deviceLoop(ctx, cfg.Devices[i], cfg, msgc, logger)
 	}
 
 LOOP:
@@ -176,7 +176,7 @@ func pub(ctx context.Context, cm *autopaho.ConnectionManager, topic string, body
 	return nil
 }
 
-func pollDevice(ctx context.Context, host string, cfg *Config, msgc chan *Msg, logger *log.Logger) {
+func deviceLoop(ctx context.Context, host string, cfg *Config, msgc chan *Msg, logger *log.Logger) {
 	ticker := time.NewTicker(cfg.Interval)
 
 	availabilityTopic := AvailabilityTopic(cfg, topicSafe(host))
@@ -186,54 +186,24 @@ func pollDevice(ctx context.Context, host string, cfg *Config, msgc chan *Msg, l
 	for {
 		newAvailability := "offline"
 		logger.Printf("%s tick\n", host)
-		rrf := netrrf.NewClient(host, cfg.Password)
 		now := time.Now()
-		var cr *types.ConfigResponse
-		var r *PollResult
-		var err error
-		if lastDiscovery == nil || (*lastDiscovery).Add(cfg.DiscoveryInterval).Before(now) {
-			cr, err = rrf.Config(ctx)
-			if err != nil {
-				logger.Printf("poll of %s config failed: %v\n", host, err)
-				goto TICK
-			}
-			lastDiscovery = &now
+		needsDiscovery := lastDiscovery == nil || (*lastDiscovery).Add(cfg.DiscoveryInterval).Before(now)
+		r, err := pollDevice(ctx, host, cfg, needsDiscovery)
+		if r != nil {
+			newAvailability = "online"
 		}
-
-		{
-			s2, err := rrf.Status(ctx, 2)
-			if err != nil {
-				logger.Printf("poll of %s status2 failed: %v\n", host, err)
-				goto TICK
-			}
-			{
-				s3, err := rrf.Status(ctx, 3)
-				if err != nil {
-					logger.Printf("poll of %s status3 failed: %v\n", host, err)
-					goto TICK
-				}
-				newAvailability = "online"
-				name := topicSafe(s2.Name)
-				r = &PollResult{
-					Host:              host,
-					TopicFriendlyName: name,
-					AvailabilityTopic: availabilityTopic,
-					StateTopic:        StateTopic(cfg, name),
-					Config:            cr,
-					Status2:           s2,
-					Status3:           s3,
-				}
-			}
-		}
-
-	TICK:
-
 		if lastAvailability != newAvailability {
+			if err != nil {
+				logger.Printf("poll error: %s\n", err)
+			}
 			lastAvailability = newAvailability
 			msgc <- &Msg{topic: availabilityTopic, body: newAvailability, retain: true}
 		}
-
 		if r != nil {
+			r.AvailabilityTopic = availabilityTopic
+			if r.Config != nil {
+				lastDiscovery = &now
+			}
 			logger.Printf("got results for %s (name=%s)\n",
 				r.Host, r.Status2.Name)
 			variables := variablesFromResults(r)
@@ -249,6 +219,35 @@ func pollDevice(ctx context.Context, host string, cfg *Config, msgc chan *Msg, l
 
 		<-ticker.C
 	}
+}
+
+func pollDevice(ctx context.Context, host string, cfg *Config, needsDiscovery bool) (*PollResult, error) {
+	rrf := netrrf.NewClient(host, cfg.Password)
+	var cr *types.ConfigResponse
+	var err error
+	if needsDiscovery {
+		cr, err = rrf.Config(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("poll of config from %s failed: %v\n", host, err)
+		}
+	}
+	s2, err := rrf.Status(ctx, 2)
+	if err != nil {
+		return nil, fmt.Errorf("poll of status2 of %s failed: %v\n", host, err)
+	}
+	s3, err := rrf.Status(ctx, 3)
+	if err != nil {
+		return nil, fmt.Errorf("poll of status3 of %s failed: %v\n", host, err)
+	}
+	name := topicSafe(s2.Name)
+	return &PollResult{
+		Host:              host,
+		TopicFriendlyName: name,
+		StateTopic:        StateTopic(cfg, name),
+		Config:            cr,
+		Status2:           s2,
+		Status3:           s3,
+	}, nil
 }
 
 func topicSafe(s string) string {
