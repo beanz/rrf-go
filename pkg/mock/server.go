@@ -192,6 +192,7 @@ func (m *MockRRF) Router() http.Handler {
 
 func (m *MockRRF) connectHandler() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		m.logger.Printf("Request %s: ", r.URL)
 		pw := r.URL.Query().Get("password")
 		w.Header().Set("Content-Type", "application/json")
 		ar := &types.AuthResponse{ErrorCode: 1}
@@ -208,6 +209,7 @@ func (m *MockRRF) connectHandler() func(w http.ResponseWriter, r *http.Request) 
 
 func (m *MockRRF) configHandler() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		m.logger.Printf("Request %s: ", r.URL)
 		if !m.auth {
 			m.logger.Printf("no authorised for %v\n", r)
 			http.Error(w, "Unauthorised", http.StatusUnauthorized)
@@ -223,6 +225,7 @@ func (m *MockRRF) configHandler() func(w http.ResponseWriter, r *http.Request) {
 
 func (m *MockRRF) statusHandler() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		m.logger.Printf("Request %s: ", r.URL)
 		if !m.auth {
 			m.logger.Printf("no authorised for %v\n", r)
 			http.Error(w, "Unauthorised", http.StatusUnauthorized)
