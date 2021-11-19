@@ -83,36 +83,102 @@ func NewMockRRF(log *log.Logger) *MockRRF {
 		d:      d,
 	}
 	m.S2 = m.S1
+
+	m.S2.ColdExtrudeTemperature = 160
+	m.S2.ColdRetractTemperature = 90
+	m.S2.Compensation = "None"
+	m.S2.ControllableFans = 2
+	m.S2.TempLimit = 290
+	m.S2.Endstops = 4080
+	m.S2.FirmwareName = "RepRapFirmware for Duet 2 WiFi/Ethernet"
+	m.S2.Geometry = "delta"
+	m.S2.Axes = 3
+	m.S2.TotalAxes = 3
+	m.S2.AxisNames = "XYZ"
+	m.S2.Volumes = 2
+	m.S2.MountedVolumes = 1
+	m.S2.Name = "MockRRF"
+	m.S2.Probe = types.Probe{
+		Threshold: 500,
+		Height:    -0.2,
+		Type:      4,
+	}
+	m.S2.Tools = []types.Tool{
+		{
+			Number:  0,
+			Heaters: []int{1},
+			Drives:  []int{0},
+			AxisMap: [][]int{{0}, {1}},
+			Fans:    1,
+			Offsets: []float64{0, 0, 0},
+		},
+	}
+	m.S2.MCUTemp = types.MinCurMax{Min: 31, Cur: 38.4, Max: 38.6}
+	m.S2.VIN = types.MinCurMax{Min: 11.9, Cur: 12.1, Max: 12.2}
+
 	m.S3 = m.S1
+	m.S3.CurrentLayerTime = 20
+	m.S3.ExtrRaw = []float64{0}
+	m.S3.FirstLayerDuration = 10
+	m.S3.FirstLayerHeight = 0.2
+	m.S3.WarmUpDuration = 2
+
 	m.Update()
 	return m
+}
+
+func round(f float64) float64 {
+	return math.Round(f*1000) / 1000
 }
 
 func (m *MockRRF) Update() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
 	m.S1.UpTime = types.Time(m.count)
 	m.S2.UpTime = types.Time(m.count)
 	m.S3.UpTime = types.Time(m.count)
+
+	layer := m.count
+	if layer > 100 {
+		m.S1.Status = types.Idle
+		m.S1.Status = types.Idle
+		m.S1.Status = types.Idle
+		return
+	}
+
 	rad := m.count * toRad
 	sin := math.Sin(rad)
 	cos := math.Cos(rad)
 	xyz := []float64{
-		m.d * cos,
-		m.d * sin,
-		m.d + m.d*sin,
+		round(m.d * cos),
+		round(m.d * sin),
+		round(m.d + m.d*sin),
 	}
 	m.S1.Coordinates.XYZ = xyz
 	m.S1.Coordinates.Machine = xyz
-	m.S1.Temps.Current = []float64{80 + 5*sin, 200 + 5*cos}
+	m.S1.Temps.Current = []float64{round(80 + 5*sin), round(200 + 5*cos)}
 
 	m.S2.Coordinates.XYZ = xyz
 	m.S2.Coordinates.Machine = xyz
-	m.S2.Temps.Current = []float64{80 + 5*sin, 200 + 5*cos}
+	m.S2.Temps.Current = m.S1.Temps.Current
 
 	m.S3.Coordinates.XYZ = xyz
 	m.S3.Coordinates.Machine = xyz
-	m.S3.Temps.Current = []float64{80 + 5*sin, 200 + 5*cos}
+	m.S3.Temps.Current = m.S1.Temps.Current
+
+	tl := types.Time((100 - m.count) * 20)
+
+	m.S3.PrintDuration = types.Time(m.count)
+	m.S3.TimesLeft = types.TimesLeft{
+		File:     tl,
+		Filament: tl,
+		Layer:    tl,
+	}
+	m.S3.CurrentLayer = int(m.count)
+	m.S3.FractionPrinted = m.count
+	m.S3.FilePosition = 20 * int(m.count)
+
 	m.count++
 }
 
