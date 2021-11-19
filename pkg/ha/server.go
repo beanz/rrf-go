@@ -21,8 +21,9 @@ import (
 )
 
 type Msg struct {
-	topic string
-	body  interface{}
+	topic  string
+	body   interface{}
+	retain bool
 }
 
 func Run(cfg *Config, logger *log.Logger) error {
@@ -89,10 +90,10 @@ func Run(cfg *Config, logger *log.Logger) error {
 		return fmt.Errorf("broker connection error: %s", err)
 	}
 
-	pollc := make(chan PollResult, 10)
+	msgc := make(chan *Msg, 100)
 
 	for i := range cfg.Devices {
-		go pollDevice(ctx, cm, cfg.Devices[i], cfg, logger, pollc)
+		go pollDevice(ctx, cfg.Devices[i], cfg, msgc, logger)
 	}
 
 LOOP:
@@ -103,26 +104,12 @@ LOOP:
 		}
 
 		select {
-		case r := <-pollc:
-			logger.Printf("got results for %s (name=%s)\n",
-				r.Host, r.Status2.Name)
-			variables := variablesFromResults(&r)
-			if r.Config != nil {
-				msgs := discoveryMessages(cfg, &r, variables)
-				for _, msg := range msgs {
-					err = pub(ctx, cm, msg.topic, msg.body, true)
-					if err != nil {
-						logger.Printf(
-							"failed to publish discovery message for %s: %s",
-							r.Host, err)
-					}
-				}
-			}
-			msg := resultMessage(&r, variables)
-			err = pub(ctx, cm, msg.topic, msg.body, false)
+		case m := <-msgc:
+			err = pub(ctx, cm, m.topic, m.body, m.retain)
 			if err != nil {
 				logger.Printf(
-					"failed to publish state message for %s: %s", r.Host, err)
+					"failed to publish discovery message for %s: %s",
+					m.topic, err)
 			}
 		case <-sigc:
 			break LOOP
@@ -132,10 +119,19 @@ LOOP:
 
 	ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	err = pub(ctx, cm, bridgeAvailabilityTopic, "offline", true)
+
+	pr, err := cm.Publish(ctx, &paho.Publish{
+		QoS:     1,
+		Topic:   bridgeAvailabilityTopic,
+		Payload: []byte("offline"),
+		Retain:  true,
+	})
 	if err != nil {
-		logger.Printf(
-			"failed to publish availability online message: %s", err)
+		fmt.Printf("failed to publish availability offline message: %s\n", err)
+	} else if pr.ReasonCode != 0 && pr.ReasonCode != 16 {
+		// 16 = Server received message but there are no subscribers
+		fmt.Printf("publish availability offline reason code %dn",
+			pr.ReasonCode)
 	}
 	_ = cm.Disconnect(ctx)
 
@@ -180,7 +176,7 @@ func pub(ctx context.Context, cm *autopaho.ConnectionManager, topic string, body
 	return nil
 }
 
-func pollDevice(ctx context.Context, cm *autopaho.ConnectionManager, host string, cfg *Config, logger *log.Logger, pollc chan PollResult) {
+func pollDevice(ctx context.Context, host string, cfg *Config, msgc chan *Msg, logger *log.Logger) {
 	ticker := time.NewTicker(cfg.Interval)
 
 	availabilityTopic := AvailabilityTopic(cfg, topicSafe(host))
@@ -193,6 +189,7 @@ func pollDevice(ctx context.Context, cm *autopaho.ConnectionManager, host string
 		rrf := netrrf.NewClient(host, cfg.Password)
 		now := time.Now()
 		var cr *types.ConfigResponse
+		var r *PollResult
 		var err error
 		if lastDiscovery == nil || (*lastDiscovery).Add(cfg.DiscoveryInterval).Before(now) {
 			cr, err = rrf.Config(ctx)
@@ -217,7 +214,7 @@ func pollDevice(ctx context.Context, cm *autopaho.ConnectionManager, host string
 				}
 				newAvailability = "online"
 				name := topicSafe(s2.Name)
-				pollc <- PollResult{
+				r = &PollResult{
 					Host:              host,
 					TopicFriendlyName: name,
 					AvailabilityTopic: availabilityTopic,
@@ -233,11 +230,21 @@ func pollDevice(ctx context.Context, cm *autopaho.ConnectionManager, host string
 
 		if lastAvailability != newAvailability {
 			lastAvailability = newAvailability
-			err = pub(ctx, cm, availabilityTopic, newAvailability, true)
-			if err != nil {
-				logger.Printf(
-					"failed to publish availability online message: %s", err)
+			msgc <- &Msg{topic: availabilityTopic, body: newAvailability, retain: true}
+		}
+
+		if r != nil {
+			logger.Printf("got results for %s (name=%s)\n",
+				r.Host, r.Status2.Name)
+			variables := variablesFromResults(r)
+			if r.Config != nil {
+				msgs := discoveryMessages(cfg, r, variables)
+				for _, msg := range msgs {
+					msgc <- msg
+				}
 			}
+			msg := resultMessage(r, variables)
+			msgc <- msg
 		}
 
 		<-ticker.C
@@ -432,8 +439,9 @@ func discoveryMessages(cfg *Config, res *PollResult, variables []Variable) []*Ms
 			sensor.Icon = v.icon
 		}
 		msgs = append(msgs, &Msg{
-			topic: ConfigTopic(cfg, res.TopicFriendlyName, v.field),
-			body:  sensor,
+			topic:  ConfigTopic(cfg, res.TopicFriendlyName, v.field),
+			body:   sensor,
+			retain: true,
 		})
 	}
 	return msgs
@@ -447,5 +455,5 @@ func resultMessage(res *PollResult, variables []Variable) *Msg {
 	for _, v := range variables {
 		msg[v.field] = v.value
 	}
-	return &Msg{topic: res.StateTopic, body: msg}
+	return &Msg{topic: res.StateTopic, body: msg, retain: false}
 }
