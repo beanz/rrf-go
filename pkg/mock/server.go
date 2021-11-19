@@ -154,8 +154,11 @@ func StatusResponse(kind int, count float64) *types.StatusResponse {
 		Seq:     0,
 		Sensors: types.Sensors{},
 		Temps: types.Temps{
-			Current: []float64{80, 200},
-			State:   []types.TempState{types.Active, types.Active},
+			Current: []float64{80, 200, 2000, 2000},
+			State: []types.TempState{
+				types.Active, types.Active, types.Off, types.Off,
+			},
+			Names: []string{"bed", "", "", ""},
 		},
 		UpTime: 500,
 	}
@@ -218,7 +221,8 @@ func StatusResponse(kind int, count float64) *types.StatusResponse {
 		round(d + d*sin),
 	}
 
-	s.Temps.Current = []float64{round(80 + 5*sin), round(200 + 5*cos)}
+	s.Temps.Current = []float64{
+		round(80 + 5*sin), round(200 + 5*cos), 2000, 2000}
 	s.Coordinates.XYZ = xyz
 	s.Coordinates.Machine = xyz
 

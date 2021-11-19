@@ -108,7 +108,7 @@ LOOP:
 			err = pub(ctx, cm, m.topic, m.body, m.retain)
 			if err != nil {
 				logger.Printf(
-					"failed to publish discovery message for %s: %s",
+					"failed to publish message for %s: %s",
 					m.topic, err)
 			}
 		case <-sigc:
@@ -213,7 +213,7 @@ func deviceLoop(ctx context.Context, host string, cfg *Config, msgc chan *Msg, l
 					msgc <- msg
 				}
 			}
-			msg := resultMessage(r, variables)
+			msg := resultMessage(r, now, variables)
 			msgc <- msg
 		}
 
@@ -282,7 +282,7 @@ type Variable struct {
 	value       interface{}
 }
 
-func variablesFromResults(res *PollResult) []Variable {
+func variablesFromResults(res *PollResult) []*Variable {
 	dcTemp := ha.DeviceClassTemperature
 	dcVolt := ha.DeviceClassVoltage
 
@@ -301,7 +301,7 @@ func variablesFromResults(res *PollResult) []Variable {
 		types.ToolChanging: 3,
 	}
 
-	variables := []Variable{
+	variables := []*Variable{
 		{
 			field: "state",
 			value: res.Status2.Status.String(),
@@ -369,7 +369,7 @@ func variablesFromResults(res *PollResult) []Variable {
 	}
 	if len(res.Status2.Coordinates.XYZ) == 3 {
 		for i, v := range []string{"x", "y", "z"} {
-			variables = append(variables, Variable{
+			variables = append(variables, &Variable{
 				field: v,
 				icon:  "mdi:axis-" + v + "-arrow",
 				value: res.Status2.Coordinates.XYZ[i],
@@ -377,7 +377,7 @@ func variablesFromResults(res *PollResult) []Variable {
 		}
 	}
 	for i := range res.Status2.Coordinates.Extruder {
-		variables = append(variables, Variable{
+		variables = append(variables, &Variable{
 			field: fmt.Sprintf("e%d", i),
 			icon:  "mdi:mdi-printer-3d-nozzle",
 			value: res.Status2.Coordinates.Extruder[i],
@@ -390,8 +390,11 @@ func variablesFromResults(res *PollResult) []Variable {
 		temp := fmt.Sprintf("temp%d", i)
 		if len(res.Status2.Temps.Names) > i && res.Status2.Temps.Names[i] != "" {
 			temp = res.Status2.Temps.Names[i]
+			if !strings.Contains(temp, "temp") {
+				temp = "temp_" + temp
+			}
 		}
-		variables = append(variables, Variable{
+		variables = append(variables, &Variable{
 			field:       temp,
 			units:       "°C",
 			deviceClass: &dcTemp,
@@ -401,7 +404,7 @@ func variablesFromResults(res *PollResult) []Variable {
 	return variables
 }
 
-func discoveryMessages(cfg *Config, res *PollResult, variables []Variable) []*Msg {
+func discoveryMessages(cfg *Config, res *PollResult, variables []*Variable) []*Msg {
 	availability := []ha.Availability{
 		{Topic: AvailabilityTopic(cfg, "bridge")},
 		{Topic: res.AvailabilityTopic},
@@ -446,10 +449,10 @@ func discoveryMessages(cfg *Config, res *PollResult, variables []Variable) []*Ms
 	return msgs
 }
 
-func resultMessage(res *PollResult, variables []Variable) *Msg {
-	t := float64(time.Now().UnixNano()/1000000) / 1000
+func resultMessage(res *PollResult, t time.Time, variables []*Variable) *Msg {
+	timestamp := float64(t.UnixNano()/1000000) / 1000
 	msg := map[string]interface{}{
-		"t": t,
+		"t": timestamp,
 	}
 	for _, v := range variables {
 		msg[v.field] = v.value
