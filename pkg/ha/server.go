@@ -356,6 +356,10 @@ func variablesFromResults(res *PollResult) []Variable {
 			field: "geometry",
 			value: res.Status2.Geometry,
 		},
+		{
+			field: "layer",
+			value: res.Status3.CurrentLayer,
+		},
 	}
 	if len(res.Status2.Coordinates.XYZ) == 3 {
 		for i, v := range []string{"x", "y", "z"} {
