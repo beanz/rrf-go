@@ -199,6 +199,7 @@ func StatusResponse(kind int, count float64) *types.StatusResponse {
 		s.AxisNames = "XYZ"
 		s.Volumes = 2
 		s.MountedVolumes = 1
+		s.Params.FanNames = []string{"", "print"}
 		s.Name = "MockRRF"
 		s.Probe = types.Probe{
 			Threshold: 500,

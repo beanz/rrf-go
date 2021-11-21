@@ -49,6 +49,13 @@ func main() {
 
 	app := &cli.App{
 		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "debug",
+				Aliases: []string{"d"},
+				Usage:   "enable debug",
+				EnvVars: []string{"RRF_DEBUG"},
+				Value:   false,
+			},
 			&cli.StringFlag{
 				Name:    "password",
 				Aliases: []string{"p"},
@@ -169,6 +176,7 @@ func main() {
 						mqttc, err := mqtt.NewClient(&mqtt.ClientConfig{
 							AppName:              appName,
 							Version:              Version,
+							Debug:                c.Bool("debug"),
 							Log:                  logger,
 							Broker:               c.String("broker"),
 							ClientID:             c.String("client-id"),
@@ -188,6 +196,7 @@ func main() {
 						cfg := &ha.Config{
 							AppName:              appName,
 							Version:              Version,
+							Debug:                c.Bool("debug"),
 							Devices:              c.Args().Slice(),
 							Password:             c.String("password"),
 							TopicPrefix:          c.String("topic-prefix"),

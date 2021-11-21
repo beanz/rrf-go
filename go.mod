@@ -3,7 +3,7 @@ module github.com/beanz/rrf-go
 go 1.17
 
 require (
-	github.com/beanz/homeassistant-go v0.0.0-20211121112800-523e3eba7d94
+	github.com/beanz/homeassistant-go v0.0.0-20211121135130-2b5faad1d7a7
 	github.com/go-chi/chi v1.5.4
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli/v2 v2.3.0

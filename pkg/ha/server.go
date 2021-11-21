@@ -43,7 +43,9 @@ func deviceLoop(ctx context.Context, host string, cfg *Config, msgc chan *mqtt.M
 	lastAvailability := ""
 	for {
 		newAvailability := "offline"
-		logger.Printf("%s tick\n", host)
+		if cfg.Debug {
+			logger.Printf("%s tick\n", host)
+		}
 		now := time.Now()
 		needsDiscovery := lastDiscovery == nil || (*lastDiscovery).Add(cfg.DiscoveryInterval).Before(now)
 		r, err := pollDevice(ctx, host, cfg, needsDiscovery)
@@ -62,8 +64,10 @@ func deviceLoop(ctx context.Context, host string, cfg *Config, msgc chan *mqtt.M
 			if r.Config != nil {
 				lastDiscovery = &now
 			}
-			logger.Printf("got results for %s (name=%s)\n",
-				r.Host, r.Status.Name)
+			if cfg.Debug {
+				logger.Printf("got results for %s (name=%s)\n",
+					r.Host, r.Status.Name)
+			}
 			variables := variablesFromResults(r)
 			if r.Config != nil {
 				msgs := discoveryMessages(cfg, r, variables)
@@ -219,6 +223,16 @@ func variablesFromResults(res *PollResult) []*Variable {
 			field: "layer",
 			value: res.Status.CurrentLayer,
 		},
+		{
+			field: "speed_requested",
+			value: res.Status.Speeds.Requested,
+			units: "mm/s",
+		},
+		{
+			field: "speed_top",
+			value: res.Status.Speeds.Top,
+			units: "mm/s",
+		},
 	}
 	if len(res.Status.Coordinates.XYZ) == 3 {
 		for i, v := range []string{"x", "y", "z"} {
@@ -267,10 +281,11 @@ func discoveryMessages(cfg *Config, res *PollResult, variables []*Variable) []*m
 	msgs := []*mqtt.Msg{}
 	for _, v := range variables {
 		sensor := ha.Sensor{
-			Availability: availability,
-			Name:         realName + " " + v.field,
-			Icon:         "mdi:printer-3d",
-			UniqueID:     res.TopicFriendlyName + "_" + v.field,
+			Availability:     availability,
+			AvailabilityMode: "all",
+			Name:             realName + " " + v.field,
+			Icon:             "mdi:printer-3d",
+			UniqueID:         res.TopicFriendlyName + "_" + v.field,
 			Device: ha.Device{
 				Identifiers: []string{
 					res.TopicFriendlyName,

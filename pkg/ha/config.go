@@ -7,6 +7,7 @@ import (
 type Config struct {
 	AppName              string
 	Version              string
+	Debug                bool
 	Devices              []string
 	Password             string
 	Broker               string

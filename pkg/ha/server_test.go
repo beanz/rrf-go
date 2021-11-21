@@ -152,6 +152,16 @@ func Test_VariablesFromResults(t *testing.T) {
 			value: 1,
 		},
 		{
+			field: "speed_requested",
+			value: 20.0,
+			units: "mm/s",
+		},
+		{
+			field: "speed_top",
+			value: 30.0,
+			units: "mm/s",
+		},
+		{
 			field: "x",
 			icon:  "mdi:axis-x-arrow",
 			value: 100.0,
@@ -207,6 +217,7 @@ func Test_DiscoveryMessages(t *testing.T) {
 							Topic: "rrfdata/mockrrf/availability",
 						},
 					},
+					AvailabilityMode: "all",
 					Device: ha.Device{
 						ConfigurationURL: "http://foo",
 						Identifiers:      []string{"mockrrf", "mockrrf_state"},
@@ -243,6 +254,7 @@ func Test_DiscoveryMessages(t *testing.T) {
 							Topic: "rrfdata/mockrrf/availability",
 						},
 					},
+					AvailabilityMode: "all",
 					Device: ha.Device{
 						ConfigurationURL: "http://foo",
 						Identifiers: []string{"mockrrf",
@@ -343,7 +355,7 @@ LOOP:
 			break LOOP
 		}
 	}
-	assert.Equal(t, 20, count) // 19 discovery messages + state
+	assert.Equal(t, 22, count) // 21 discovery messages + state
 }
 
 func Test_DeviceLoopError(t *testing.T) {
@@ -427,7 +439,7 @@ LOOP:
 			break LOOP
 		}
 	}
-	assert.Equal(t, 20, count) // 19 discovery messages + state
+	assert.Equal(t, 22, count) // 21 discovery messages + state
 }
 
 type MockPS struct {
