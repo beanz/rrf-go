@@ -243,7 +243,7 @@ func main() {
 						Aliases: []string{"dp"},
 						Usage:   "MQTT topic prefix for discovery (default 'homeassistant')",
 						EnvVars: []string{"RRF_DISCOVERY_TOPIC_PREFIX"},
-						Value:   "bar", // todo change default to homeassistant
+						Value:   "homeassistant",
 					},
 					&cli.DurationFlag{
 						Name: "interval", Aliases: []string{"i"},
