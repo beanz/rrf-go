@@ -14,12 +14,14 @@ import (
 )
 
 type MockRRF struct {
-	Auth   *types.AuthResponse
-	logger *log.Logger
-	auth   bool
-	count  float64
-	d      float64
-	mu     sync.Mutex
+	Auth     *types.AuthResponse
+	logger   *log.Logger
+	auth     bool
+	count    float64
+	requests int
+	failSet  map[int]bool
+	d        float64
+	mu       sync.Mutex
 }
 
 const toRad = float64(0.0174533)
@@ -32,11 +34,18 @@ func NewMockRRF(log *log.Logger) *MockRRF {
 			SessionTimeout: types.Time(8000),
 			BoardType:      "mockrrf",
 		},
-		logger: log,
-		auth:   false,
-		count:  0,
-		d:      d,
+		logger:   log,
+		auth:     false,
+		count:    0,
+		requests: 0,
+		failSet:  map[int]bool{},
+		d:        d,
 	}
+	return m
+}
+
+func (m *MockRRF) WithFailSet(f map[int]bool) *MockRRF {
+	m.failSet = f
 	return m
 }
 
@@ -52,6 +61,18 @@ func (m *MockRRF) Update() {
 
 func (m *MockRRF) Router() http.Handler {
 	router := chi.NewRouter()
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			rn := m.requests
+			m.requests++
+			if m.failSet[rn] {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	})
+
 	router.Get("/rr_connect", m.connectHandler())
 	router.Get("/rr_config", m.configHandler())
 	router.Get("/rr_status", m.statusHandler())

@@ -1,6 +1,6 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/beanz/homeassistant-go v0.0.0-20211112132142-582b4bbff9c8 h1:orAMk+IBu2tKe2l64rChppefnpLCW1BvL9BNSo3ninU=
-github.com/beanz/homeassistant-go v0.0.0-20211112132142-582b4bbff9c8/go.mod h1:TNN5rF6LNVDuPWKnx7uxKHt2hB3DSs+KjcT6cF8ZOhU=
+github.com/beanz/homeassistant-go v0.0.0-20211121112800-523e3eba7d94 h1:L6pE1fGP1pNsw6d+ltlMgzdTGppBUbnYH0rACgF0XYs=
+github.com/beanz/homeassistant-go v0.0.0-20211121112800-523e3eba7d94/go.mod h1:XnPLoT3kTvOyFPH5bvixnj0NbQPFps+51WqtliuaCJs=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
 github.com/cpuguy83/go-md2man/v2 v2.0.0 h1:EoUDS0afbrsXAZ9YQ9jdu/mZ2sXgT1/2yyNng4PGlyM=
 github.com/cpuguy83/go-md2man/v2 v2.0.0/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=

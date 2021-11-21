@@ -3,8 +3,7 @@ module github.com/beanz/rrf-go
 go 1.17
 
 require (
-	github.com/beanz/homeassistant-go v0.0.0-20211112132142-582b4bbff9c8
-	github.com/eclipse/paho.golang v0.10.0
+	github.com/beanz/homeassistant-go v0.0.0-20211121112800-523e3eba7d94
 	github.com/go-chi/chi v1.5.4
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli/v2 v2.3.0
@@ -13,6 +12,7 @@ require (
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/eclipse/paho.golang v0.10.0 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/kr/pretty v0.2.0 // indirect

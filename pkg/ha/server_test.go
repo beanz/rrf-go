@@ -3,6 +3,7 @@ package ha
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log"
 	"net/http/httptest"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	mqtt "github.com/beanz/homeassistant-go/pkg/mqtt"
 	ha "github.com/beanz/homeassistant-go/pkg/types"
 	"github.com/beanz/rrf-go/pkg/mock"
 	"github.com/beanz/rrf-go/pkg/types"
@@ -44,6 +46,34 @@ func Test_PollDevice(t *testing.T) {
 		Status2:           mock.StatusResponse(2, 0),
 		Status3:           mock.StatusResponse(3, 1),
 	}, r)
+}
+
+func Test_PollDeviceErrorCases(t *testing.T) {
+	for _, call := range []int{0, 1, 2, 3} {
+		t.Run(fmt.Sprintf("fail on call #%d", call), func(t *testing.T) {
+
+			var buf bytes.Buffer
+			m := mock.NewMockRRF(log.New(&buf, "", 0)).WithFailSet(
+				map[int]bool{call: true},
+			)
+
+			ts := httptest.NewServer(m.Router())
+			defer ts.Close()
+
+			host := strings.Split(ts.URL, "://")[1]
+			ctx, cancel := context.WithCancel(context.Background())
+			_, err := pollDevice(ctx,
+				host, &Config{
+					Password:             "passw0rd",
+					Interval:             60,
+					TopicPrefix:          "rrfdata",
+					DiscoveryTopicPrefix: "rrfdisc",
+				}, true)
+			defer cancel()
+
+			require.Error(t, err)
+		})
+	}
 }
 
 func Test_VariablesFromResults(t *testing.T) {
@@ -163,14 +193,14 @@ func Test_DiscoveryMessages(t *testing.T) {
 	tests := []struct {
 		name     string
 		variable *Variable
-		want     *Msg
+		want     *mqtt.Msg
 	}{
 		{
 			name:     "simple state",
 			variable: &Variable{field: "state", value: "printing"},
-			want: &Msg{
-				topic: "rrfdisc/sensor/mockrrf_state/config",
-				body: ha.Sensor{
+			want: &mqtt.Msg{
+				Topic: "rrfdisc/sensor/mockrrf_state/config",
+				Body: ha.Sensor{
 					Availability: []ha.Availability{
 						{
 							Topic: "rrfdata/bridge/availability",
@@ -192,7 +222,7 @@ func Test_DiscoveryMessages(t *testing.T) {
 					UniqueID:      "mockrrf_state",
 					ValueTemplate: "{{ value_json.state}}",
 				},
-				retain: true,
+				Retain: true,
 			},
 		},
 		{
@@ -204,9 +234,9 @@ func Test_DiscoveryMessages(t *testing.T) {
 				deviceClass: &dcTemp,
 				value:       200.3,
 			},
-			want: &Msg{
-				topic: "rrfdisc/sensor/mockrrf_hotend_temp/config",
-				body: ha.Sensor{
+			want: &mqtt.Msg{
+				Topic: "rrfdisc/sensor/mockrrf_hotend_temp/config",
+				Body: ha.Sensor{
 					Availability: []ha.Availability{
 						{
 							Topic: "rrfdata/bridge/availability",
@@ -231,7 +261,7 @@ func Test_DiscoveryMessages(t *testing.T) {
 					UniqueID:          "mockrrf_hotend_temp",
 					ValueTemplate:     "{{ value_json.hotend_temp}}",
 				},
-				retain: true,
+				Retain: true,
 			},
 		},
 	}
@@ -263,9 +293,9 @@ func Test_ResultMessages(t *testing.T) {
 		then,
 		[]*Variable{{field: "state", value: "printing"}},
 	)
-	assert.Equal(t, &Msg{
-		topic: "rrfdata/mockrrf/state",
-		body: map[string]interface{}{
+	assert.Equal(t, &mqtt.Msg{
+		Topic: "rrfdata/mockrrf/state",
+		Body: map[string]interface{}{
 			"state": "printing",
 			"t":     1637280000.0,
 		},
@@ -281,7 +311,7 @@ func Test_DeviceLoop(t *testing.T) {
 	host := strings.Split(ts.URL, "://")[1]
 	safeHost := topicSafe(host)
 
-	msgc := make(chan *Msg, 100)
+	msgc := make(chan *mqtt.Msg, 100)
 	var pollBuf bytes.Buffer
 	polllog := log.New(&pollBuf, "", 0)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -298,10 +328,10 @@ func Test_DeviceLoop(t *testing.T) {
 
 	msg := <-msgc
 	assert.Equal(t,
-		&Msg{
-			topic:  "rrfdata/" + safeHost + "/availability",
-			body:   "online",
-			retain: true,
+		&mqtt.Msg{
+			Topic:  "rrfdata/" + safeHost + "/availability",
+			Body:   "online",
+			Retain: true,
 		},
 		msg)
 	timeout := time.NewTimer(time.Second)
@@ -317,4 +347,97 @@ LOOP:
 		}
 	}
 	assert.Equal(t, 20, count) // 19 discovery messages + state
+}
+
+func Test_DeviceLoopError(t *testing.T) {
+	var buf bytes.Buffer
+	mock := mock.NewMockRRF(log.New(&buf, "", 0))
+	ts := httptest.NewServer(mock.Router())
+	defer ts.Close()
+
+	host := strings.Split(ts.URL, "://")[1]
+	safeHost := topicSafe(host)
+
+	msgc := make(chan *mqtt.Msg, 100)
+	var pollBuf bytes.Buffer
+	polllog := log.New(&pollBuf, "", 0)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		deviceLoop(ctx,
+			host, &Config{
+				Password:             "incorrect",
+				Interval:             time.Second * 60,
+				TopicPrefix:          "rrfdata",
+				DiscoveryTopicPrefix: "rrfdisc",
+			}, msgc, polllog)
+	}()
+	defer cancel()
+
+	msg := <-msgc
+	assert.Equal(t,
+		&mqtt.Msg{
+			Topic:  "rrfdata/" + safeHost + "/availability",
+			Body:   "offline",
+			Retain: true,
+		},
+		msg)
+}
+
+func Test_Run(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var buf bytes.Buffer
+	mock := mock.NewMockRRF(log.New(&buf, "", 0))
+	ts := httptest.NewServer(mock.Router())
+	defer ts.Close()
+	host := strings.Split(ts.URL, "://")[1]
+
+	cfg := &Config{
+		Password:             "passw0rd",
+		Interval:             time.Second * 60,
+		TopicPrefix:          "rrfdata",
+		DiscoveryTopicPrefix: "rrfdisc",
+		Devices:              []string{host},
+	}
+	msgp := make(chan *mqtt.Msg, 30)
+	msgs := make(chan *mqtt.Msg, 1)
+	var runBuf bytes.Buffer
+	log := log.New(&runBuf, "", 0)
+	go func() {
+		err := Run(ctx, cfg, log, &MockPS{}, msgp, msgs)
+		assert.NoError(t, err)
+	}()
+
+	safeHost := topicSafe(host)
+	msg := <-msgp
+	assert.Equal(t,
+		&mqtt.Msg{
+			Topic:  "rrfdata/" + safeHost + "/availability",
+			Body:   "online",
+			Retain: true,
+		},
+		msg)
+
+	timeout := time.NewTimer(time.Second)
+	defer timeout.Stop()
+	count := 0
+LOOP:
+	for {
+		select {
+		case <-msgp:
+			count++
+		case <-timeout.C:
+			break LOOP
+		}
+	}
+	assert.Equal(t, 20, count) // 19 discovery messages + state
+}
+
+type MockPS struct {
+}
+
+func (ps *MockPS) Run(ctx context.Context, msgp, msgs chan *mqtt.Msg) error {
+
+	<-ctx.Done()
+	return nil
 }

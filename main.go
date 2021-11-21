@@ -28,8 +28,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	mqtt "github.com/beanz/homeassistant-go/pkg/mqtt"
 	"github.com/beanz/rrf-go/pkg/ha"
 	"github.com/beanz/rrf-go/pkg/mock"
 	"github.com/beanz/rrf-go/pkg/netrrf"
@@ -152,25 +155,59 @@ func main() {
 				Aliases: []string{"ha"},
 				Usage:   "homeassistant integration",
 				Action: func(c *cli.Context) error {
-					fmt.Println("homeassistant task: ", c.Args().First())
-					cfg := &ha.Config{
-						AppName:              appName,
-						Version:              Version,
-						Devices:              c.Args().Slice(),
-						Password:             c.String("password"),
-						Broker:               c.String("broker"),
-						ClientID:             c.String("client-id"),
-						TopicPrefix:          c.String("topic-prefix"),
-						DiscoveryTopicPrefix: c.String("discovery-topic-prefix"),
-						Interval:             c.Duration("interval"),
-						DiscoveryInterval:    c.Duration("discovery-interval"),
-						ConnectRetryDelay:    c.Duration("connect-retry-delay"),
-						KeepAlive:            c.Int("keepalive"),
+					sigc := make(chan os.Signal, 1)
+					signal.Notify(sigc, os.Interrupt)
+					signal.Notify(sigc, syscall.SIGTERM)
+
+					ctx, cancel := context.WithCancel(context.Background())
+					defer cancel()
+					errCh := make(chan error, 1)
+
+					go func(ctx context.Context, errCh chan error) {
+						logger := log.New(stdout, "",
+							log.Ldate|log.Ltime|log.Lmicroseconds)
+						mqttc, err := mqtt.NewClient(&mqtt.ClientConfig{
+							AppName:              appName,
+							Version:              Version,
+							Log:                  logger,
+							Broker:               c.String("broker"),
+							ClientID:             c.String("client-id"),
+							DataTopicPrefix:      c.String("topic-prefix"),
+							DiscoveryTopicPrefix: c.String("discovery-topic-prefix"),
+							ConnectRetryDelay:    c.Duration("connect-retry-delay"),
+							KeepAlive:            int16(c.Int("keepalive")),
+						}, logger)
+						if err != nil {
+							errCh <- fmt.Errorf("Failed to create MQTT client: %w", err)
+							return
+						}
+
+						msgp := make(chan *mqtt.Msg, 300)
+						msgs := make(chan *mqtt.Msg, 1)
+
+						cfg := &ha.Config{
+							AppName:              appName,
+							Version:              Version,
+							Devices:              c.Args().Slice(),
+							Password:             c.String("password"),
+							TopicPrefix:          c.String("topic-prefix"),
+							DiscoveryTopicPrefix: c.String("discovery-topic-prefix"),
+							Interval:             c.Duration("interval"),
+							DiscoveryInterval:    c.Duration("discovery-interval"),
+						}
+						errCh <- ha.Run(ctx, cfg, logger, mqttc, msgp, msgs)
+					}(ctx, errCh)
+					var err error
+				LOOP:
+					for {
+						select {
+						case <-sigc:
+							cancel()
+						case err = <-errCh:
+							break LOOP
+						}
 					}
-					return ha.Run(
-						cfg,
-						log.New(stdout, "",
-							log.Ldate|log.Ltime|log.Lmicroseconds))
+					return err
 				},
 				Flags: []cli.Flag{
 					&cli.StringFlag{

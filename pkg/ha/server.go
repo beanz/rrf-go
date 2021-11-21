@@ -2,140 +2,27 @@ package ha
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/url"
-	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 
-	ha "github.com/beanz/homeassistant-go/pkg/types"
+	mqtt "github.com/beanz/homeassistant-go/pkg/mqtt"
 	"github.com/beanz/rrf-go/pkg/netrrf"
 	"github.com/beanz/rrf-go/pkg/types"
 
-	"github.com/eclipse/paho.golang/autopaho"
-	"github.com/eclipse/paho.golang/paho"
+	ha "github.com/beanz/homeassistant-go/pkg/types"
 )
 
-type Msg struct {
-	topic  string
-	body   interface{}
-	retain bool
-}
-
-func Run(cfg *Config, logger *log.Logger) error {
-	logger.Printf("%s v%s\n", cfg.AppName, cfg.Version)
-	logger.Println("Starting Home Assistant integration")
-
-	sigc := make(chan os.Signal, 1)
-	signal.Notify(sigc, os.Interrupt)
-	signal.Notify(sigc, syscall.SIGTERM)
-	brokerURL, err := url.Parse(cfg.Broker)
-	if err != nil {
-		return fmt.Errorf("invalid broker url: %w", err)
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
+func Run(ctx context.Context, cfg *Config, logger *log.Logger, mqttc mqtt.PubSubServer, msgp, msgs chan *mqtt.Msg) error {
+	childCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	bridgeAvailabilityTopic := AvailabilityTopic(cfg, "bridge")
-
-	cmCfg := autopaho.ClientConfig{
-		BrokerUrls:        []*url.URL{brokerURL},
-		KeepAlive:         uint16(cfg.KeepAlive),
-		ConnectRetryDelay: cfg.ConnectRetryDelay,
-		OnConnectionUp: func(cm *autopaho.ConnectionManager, connAck *paho.Connack) {
-			logger.Println("MQTT connection up")
-			err = pub(ctx, cm, bridgeAvailabilityTopic, "online", true)
-			if err != nil {
-				logger.Printf(
-					"failed to publish availability online message: %s", err)
-			}
-		},
-		OnConnectError: func(err error) {
-			logger.Printf("error whilst attempting connection: %s\n", err)
-		},
-		Debug: paho.NOOPLogger{},
-		ClientConfig: paho.ClientConfig{
-			ClientID: cfg.ClientID,
-			OnClientError: func(err error) {
-				logger.Printf("server requested disconnect: %s\n", err)
-			},
-			OnServerDisconnect: func(d *paho.Disconnect) {
-				if d.Properties != nil {
-					logger.Printf("server requested disconnect: %s\n",
-						d.Properties.ReasonString)
-				} else {
-					logger.Printf(
-						"server requested disconnect; reason code: %d\n",
-						d.ReasonCode)
-				}
-			},
-		},
-	}
-	logger.Printf("setting will message %s: %s\n",
-		bridgeAvailabilityTopic, "offline")
-	cmCfg.SetWillMessage(bridgeAvailabilityTopic, []byte("offline"), 1, true)
-
-	cm, err := autopaho.NewConnection(ctx, cmCfg)
-	if err != nil {
-		return err
-	}
-
-	err = cm.AwaitConnection(ctx)
-	if err != nil { // Should only happen when context is cancelled
-		return fmt.Errorf("broker connection error: %s", err)
-	}
-
-	msgc := make(chan *Msg, 300)
 
 	for i := range cfg.Devices {
-		go deviceLoop(ctx, cfg.Devices[i], cfg, msgc, logger)
+		go deviceLoop(childCtx, cfg.Devices[i], cfg, msgp, logger)
 	}
 
-LOOP:
-	for {
-		err = cm.AwaitConnection(ctx)
-		if err != nil { // Should only happen when context is cancelled
-			return fmt.Errorf("broker connection error: %s", err)
-		}
-
-		select {
-		case m := <-msgc:
-			err = pub(ctx, cm, m.topic, m.body, m.retain)
-			if err != nil {
-				logger.Printf(
-					"failed to publish message for %s: %s",
-					m.topic, err)
-			}
-		case <-sigc:
-			break LOOP
-		}
-	}
-	logger.Println("shutting down")
-
-	ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	pr, err := cm.Publish(ctx, &paho.Publish{
-		QoS:     1,
-		Topic:   bridgeAvailabilityTopic,
-		Payload: []byte("offline"),
-		Retain:  true,
-	})
-	if err != nil {
-		fmt.Printf("failed to publish availability offline message: %s\n", err)
-	} else if pr.ReasonCode != 0 && pr.ReasonCode != 16 {
-		// 16 = Server received message but there are no subscribers
-		fmt.Printf("publish availability offline reason code %dn",
-			pr.ReasonCode)
-	}
-	_ = cm.Disconnect(ctx)
-
-	return nil
+	return mqttc.Run(childCtx, msgp, msgs)
 }
 
 type PollResult struct {
@@ -148,35 +35,7 @@ type PollResult struct {
 	Status3           *types.StatusResponse
 }
 
-func pub(ctx context.Context, cm *autopaho.ConnectionManager, topic string, body interface{}, retain bool) error {
-	var b []byte
-	var err error
-	if s, ok := body.(string); ok {
-		b = []byte(s)
-	} else {
-		b, err = json.Marshal(body)
-		if err != nil {
-			return err
-		}
-	}
-	go func(msg []byte) {
-		pr, err := cm.Publish(ctx, &paho.Publish{
-			QoS:     1,
-			Topic:   topic,
-			Payload: msg,
-			Retain:  retain,
-		})
-		if err != nil {
-			fmt.Printf("error publishing: %s\n", err)
-		} else if pr.ReasonCode != 0 && pr.ReasonCode != 16 {
-			// 16 = Server received message but there are no subscribers
-			fmt.Printf("reason code %d received\n", pr.ReasonCode)
-		}
-	}(b)
-	return nil
-}
-
-func deviceLoop(ctx context.Context, host string, cfg *Config, msgc chan *Msg, logger *log.Logger) {
+func deviceLoop(ctx context.Context, host string, cfg *Config, msgc chan *mqtt.Msg, logger *log.Logger) {
 	ticker := time.NewTicker(cfg.Interval)
 
 	availabilityTopic := AvailabilityTopic(cfg, topicSafe(host))
@@ -197,7 +56,7 @@ func deviceLoop(ctx context.Context, host string, cfg *Config, msgc chan *Msg, l
 				logger.Printf("poll error: %s\n", err)
 			}
 			lastAvailability = newAvailability
-			msgc <- &Msg{topic: availabilityTopic, body: newAvailability, retain: true}
+			msgc <- &mqtt.Msg{Topic: availabilityTopic, Body: newAvailability, Retain: true}
 		}
 		if r != nil {
 			r.AvailabilityTopic = availabilityTopic
@@ -228,16 +87,16 @@ func pollDevice(ctx context.Context, host string, cfg *Config, needsDiscovery bo
 	if needsDiscovery {
 		cr, err = rrf.Config(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("poll of config from %s failed: %v\n", host, err)
+			return nil, fmt.Errorf("poll of config from %s failed: %v", host, err)
 		}
 	}
 	s2, err := rrf.Status(ctx, 2)
 	if err != nil {
-		return nil, fmt.Errorf("poll of status2 of %s failed: %v\n", host, err)
+		return nil, fmt.Errorf("poll of status2 of %s failed: %v", host, err)
 	}
 	s3, err := rrf.Status(ctx, 3)
 	if err != nil {
-		return nil, fmt.Errorf("poll of status3 of %s failed: %v\n", host, err)
+		return nil, fmt.Errorf("poll of status3 of %s failed: %v", host, err)
 	}
 	name := topicSafe(s2.Name)
 	return &PollResult{
@@ -404,14 +263,14 @@ func variablesFromResults(res *PollResult) []*Variable {
 	return variables
 }
 
-func discoveryMessages(cfg *Config, res *PollResult, variables []*Variable) []*Msg {
+func discoveryMessages(cfg *Config, res *PollResult, variables []*Variable) []*mqtt.Msg {
 	availability := []ha.Availability{
 		{Topic: AvailabilityTopic(cfg, "bridge")},
 		{Topic: res.AvailabilityTopic},
 	}
 	realName := res.Status2.Name
 
-	msgs := []*Msg{}
+	msgs := []*mqtt.Msg{}
 	for _, v := range variables {
 		sensor := ha.Sensor{
 			Availability: availability,
@@ -440,16 +299,16 @@ func discoveryMessages(cfg *Config, res *PollResult, variables []*Variable) []*M
 		if v.icon != "" {
 			sensor.Icon = v.icon
 		}
-		msgs = append(msgs, &Msg{
-			topic:  ConfigTopic(cfg, res.TopicFriendlyName, v.field),
-			body:   sensor,
-			retain: true,
+		msgs = append(msgs, &mqtt.Msg{
+			Topic:  ConfigTopic(cfg, res.TopicFriendlyName, v.field),
+			Body:   sensor,
+			Retain: true,
 		})
 	}
 	return msgs
 }
 
-func resultMessage(res *PollResult, t time.Time, variables []*Variable) *Msg {
+func resultMessage(res *PollResult, t time.Time, variables []*Variable) *mqtt.Msg {
 	timestamp := float64(t.UnixNano()/1000000) / 1000
 	msg := map[string]interface{}{
 		"t": timestamp,
@@ -457,5 +316,5 @@ func resultMessage(res *PollResult, t time.Time, variables []*Variable) *Msg {
 	for _, v := range variables {
 		msg[v.field] = v.value
 	}
-	return &Msg{topic: res.StateTopic, body: msg, retain: false}
+	return &mqtt.Msg{Topic: res.StateTopic, Body: msg, Retain: false}
 }
