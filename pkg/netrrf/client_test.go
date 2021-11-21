@@ -443,3 +443,99 @@ func Test_Status3(t *testing.T) {
 		})
 	}
 }
+
+func Test_FullStatus(t *testing.T) {
+	tests := []struct {
+		name      string
+		responses []*http.Response
+		errors    []error
+		checks    func(*testing.T, *types.StatusResponse)
+		authDone  bool
+		wantErr   bool
+	}{
+		{
+			name:     "successful full status request",
+			authDone: true,
+			responses: []*http.Response{
+				{
+					Status:     "200 OK",
+					StatusCode: 200,
+					Proto:      "HTTP/1.0",
+					Body: io.NopCloser(strings.NewReader(
+						`{"status":"I","coords":{"axesHomed":[0,0,0],"wpl":1,"xyz":[0,0,550.008],"machine":[0,0,550.008],"extr":[0]},"speeds":{"requested":0,"top":0},"currentTool":0,"params":{"atxPower":0,"fanPercent":[0,50,0,0,0,0,0,0,0],"fanNames":["","","","","","","","",""],"speedFactor":100,"extrFactors":[100],"babystep":0},"seq":0,"sensors":{"probeValue":0,"fanRPM":0},"temps":{"current":[2000,22.3,2000,2000,2000,2000,2000,2000],"state":[0,2,0,0,0,0,0,0],"names":["","","","","","","",""],"tools":{"active":[[0]],"standby":[[0]]},"extra":[{"name":"*MCU","temp":38.4}]},"time":567,"coldExtrudeTemp":160,"coldRetractTemp":90,"compensation":"None","controllableFans":2,"tempLimit":290,"endstops":4080,"firmwareName":"RepRapFirmware for Duet 2 WiFi/Ethernet","geometry":"delta","axes":3,"totalAxes":3,"axisNames":"XYZ","volumes":2,"mountedVolumes":1,"name":"Cerb","probe":{"threshold":500,"height":-0.2,"type":4},"tools":[{"number":0,"heaters":[1],"drives":[0],"axisMap":[[0],[1]],"fans":1,"filament":"","offsets":[0,0,0]}],"mcutemp":{"min":31,"cur":38.4,"max":38.6},"vin":{"min":11.9,"cur":12.1,"max":12.2}}`)),
+				},
+				{
+					Status:     "200 OK",
+					StatusCode: 200,
+					Proto:      "HTTP/1.0",
+					Body: io.NopCloser(strings.NewReader(
+						`{"status":"I","coords":{"axesHomed":[0,0,0],"wpl":1,"xyz":[0,0,550.008],"machine":[0,0,550.008],"extr":[0]},"speeds":{"requested":0,"top":0},"currentTool":0,"params":{"atxPower":0,"fanPercent":[0,50,0,0,0,0,0,0,0],"speedFactor":100,"extrFactors":[100],"babystep":0},"seq":0,"sensors":{"probeValue":0,"fanRPM":0},"temps":{"current":[2000,22.3,2000,2000,2000,2000,2000,2000],"state":[0,2,0,0,0,0,0,0],"tools":{"active":[[0]],"standby":[[0]]},"extra":[{"name":"*MCU","temp":38.4}]},"time":567,"currentLayer":0,"currentLayerTime":0,"extrRaw":[0],"fractionPrinted":0,"filePosition":0,"firstLayerDuration":0,"firstLayerHeight":0,"printDuration":0,"warmUpDuration":0,"timesLeft":{"file":0,"filament":0,"layer":0}}`)),
+				},
+			},
+			checks: func(t *testing.T, s1 *types.StatusResponse) {
+				assert.Equal(t, 1, 1)
+			},
+			wantErr: false,
+		},
+		{
+			name: "status2 sub-request auth error",
+			responses: []*http.Response{
+				{
+					Status:     "200 OK",
+					StatusCode: 200,
+					Proto:      "HTTP/1.0",
+					Body:       io.NopCloser(strings.NewReader("{")),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:     "status2 sub-request error",
+			authDone: true,
+			responses: []*http.Response{
+				{
+					Status:     "200 OK",
+					StatusCode: 200,
+					Proto:      "HTTP/1.0",
+					Body:       io.NopCloser(strings.NewReader("{")),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:     "status3 sub-request error",
+			authDone: true,
+			responses: []*http.Response{
+				{
+					Status:     "200 OK",
+					StatusCode: 200,
+					Proto:      "HTTP/1.0",
+					Body: io.NopCloser(strings.NewReader(
+						`{"status":"I","coords":{"axesHomed":[0,0,0],"wpl":1,"xyz":[0,0,550.008],"machine":[0,0,550.008],"extr":[0]},"speeds":{"requested":0,"top":0},"currentTool":0,"params":{"atxPower":0,"fanPercent":[0,50,0,0,0,0,0,0,0],"fanNames":["","","","","","","","",""],"speedFactor":100,"extrFactors":[100],"babystep":0},"seq":0,"sensors":{"probeValue":0,"fanRPM":0},"temps":{"current":[2000,22.3,2000,2000,2000,2000,2000,2000],"state":[0,2,0,0,0,0,0,0],"names":["","","","","","","",""],"tools":{"active":[[0]],"standby":[[0]]},"extra":[{"name":"*MCU","temp":38.4}]},"time":567,"coldExtrudeTemp":160,"coldRetractTemp":90,"compensation":"None","controllableFans":2,"tempLimit":290,"endstops":4080,"firmwareName":"RepRapFirmware for Duet 2 WiFi/Ethernet","geometry":"delta","axes":3,"totalAxes":3,"axisNames":"XYZ","volumes":2,"mountedVolumes":1,"name":"Cerb","probe":{"threshold":500,"height":-0.2,"type":4},"tools":[{"number":0,"heaters":[1],"drives":[0],"axisMap":[[0],[1]],"fans":1,"filament":"","offsets":[0,0,0]}],"mcutemp":{"min":31,"cur":38.4,"max":38.6},"vin":{"min":11.9,"cur":12.1,"max":12.2}}`)),
+				},
+				{
+					Status:     "200 OK",
+					StatusCode: 200,
+					Proto:      "HTTP/1.0",
+					Body:       io.NopCloser(strings.NewReader("{")),
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var httpClient = &httpClientMock{
+				tc.responses, tc.errors, []*http.Request{}}
+			rrf := NewClient("localhost", "foo").WithHTTPClient(httpClient)
+			rrf.authDone = tc.authDone
+			s, err := rrf.FullStatus(context.Background())
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			tc.checks(t, s)
+		})
+	}
+}

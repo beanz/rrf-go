@@ -145,3 +145,27 @@ func (c *Client) Status(ctx context.Context, t int) (*types.StatusResponse, erro
 	}
 	return &res, nil
 }
+
+func (c *Client) FullStatus(ctx context.Context) (*types.StatusResponse, error) {
+	res, err := c.Status(ctx, 2)
+	if err != nil {
+		return nil, err
+	}
+	s3, err := c.Status(ctx, 3)
+	if err != nil {
+		return nil, err
+	}
+
+	res.CurrentLayer = s3.CurrentLayer
+	res.CurrentLayerTime = s3.CurrentLayerTime
+	res.ExtrRaw = s3.ExtrRaw
+	res.FractionPrinted = s3.FractionPrinted
+	res.FilePosition = s3.FilePosition
+	res.FirstLayerDuration = s3.FirstLayerDuration
+	res.FirstLayerHeight = s3.FirstLayerHeight
+	res.PrintDuration = s3.PrintDuration
+	res.WarmUpDuration = s3.WarmUpDuration
+	res.TimesLeft = s3.TimesLeft
+
+	return res, nil
+}
