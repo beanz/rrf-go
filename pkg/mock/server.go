@@ -264,3 +264,21 @@ func StatusResponse(kind int, count float64) *types.StatusResponse {
 	s.FilePosition = 20 * int(count)
 	return s
 }
+
+func FullStatusResponse(count float64) *types.StatusResponse {
+	res := StatusResponse(2, count)
+	s3 := StatusResponse(3, count+1)
+
+	res.CurrentLayer = s3.CurrentLayer
+	res.CurrentLayerTime = s3.CurrentLayerTime
+	res.ExtrRaw = s3.ExtrRaw
+	res.FractionPrinted = s3.FractionPrinted
+	res.FilePosition = s3.FilePosition
+	res.FirstLayerDuration = s3.FirstLayerDuration
+	res.FirstLayerHeight = s3.FirstLayerHeight
+	res.PrintDuration = s3.PrintDuration
+	res.WarmUpDuration = s3.WarmUpDuration
+	res.TimesLeft = s3.TimesLeft
+
+	return res
+}

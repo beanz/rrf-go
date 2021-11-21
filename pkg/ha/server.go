@@ -31,8 +31,7 @@ type PollResult struct {
 	AvailabilityTopic string
 	StateTopic        string
 	Config            *types.ConfigResponse
-	Status2           *types.StatusResponse
-	Status3           *types.StatusResponse
+	Status            *types.StatusResponse
 }
 
 func deviceLoop(ctx context.Context, host string, cfg *Config, msgc chan *mqtt.Msg, logger *log.Logger) {
@@ -64,7 +63,7 @@ func deviceLoop(ctx context.Context, host string, cfg *Config, msgc chan *mqtt.M
 				lastDiscovery = &now
 			}
 			logger.Printf("got results for %s (name=%s)\n",
-				r.Host, r.Status2.Name)
+				r.Host, r.Status.Name)
 			variables := variablesFromResults(r)
 			if r.Config != nil {
 				msgs := discoveryMessages(cfg, r, variables)
@@ -90,22 +89,17 @@ func pollDevice(ctx context.Context, host string, cfg *Config, needsDiscovery bo
 			return nil, fmt.Errorf("poll of config from %s failed: %v", host, err)
 		}
 	}
-	s2, err := rrf.Status(ctx, 2)
+	s, err := rrf.FullStatus(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("poll of status2 of %s failed: %v", host, err)
+		return nil, fmt.Errorf("poll of status of %s failed: %v", host, err)
 	}
-	s3, err := rrf.Status(ctx, 3)
-	if err != nil {
-		return nil, fmt.Errorf("poll of status3 of %s failed: %v", host, err)
-	}
-	name := topicSafe(s2.Name)
+	name := topicSafe(s.Name)
 	return &PollResult{
 		Host:              host,
 		TopicFriendlyName: name,
 		StateTopic:        StateTopic(cfg, name),
 		Config:            cr,
-		Status2:           s2,
-		Status3:           s3,
+		Status:            s,
 	}, nil
 }
 
@@ -163,92 +157,92 @@ func variablesFromResults(res *PollResult) []*Variable {
 	variables := []*Variable{
 		{
 			field: "state",
-			value: res.Status2.Status.String(),
+			value: res.Status.Status.String(),
 		},
 		{
 			field: "state_code",
-			value: stateCode[res.Status2.Status],
+			value: stateCode[res.Status.Status],
 		},
 		{
 			field: "file_time_remaining",
-			value: res.Status3.TimesLeft.File,
+			value: res.Status.TimesLeft.File,
 		},
 		{
 			field: "filament_time_remaining",
-			value: res.Status3.TimesLeft.Filament,
+			value: res.Status.TimesLeft.Filament,
 		},
 		{
 			field: "layer_time_remaining",
-			value: res.Status3.TimesLeft.Layer,
+			value: res.Status.TimesLeft.Layer,
 		},
 		{
 			field:       "mcu_temp_min",
 			units:       "°C",
 			deviceClass: &dcTemp,
-			value:       res.Status2.MCUTemp.Min,
+			value:       res.Status.MCUTemp.Min,
 		},
 		{
 			field:       "mcu_temp_cur",
 			units:       "°C",
 			deviceClass: &dcTemp,
-			value:       res.Status2.MCUTemp.Cur,
+			value:       res.Status.MCUTemp.Cur,
 		},
 		{
 			field:       "mcu_temp_max",
 			units:       "°C",
 			deviceClass: &dcTemp,
-			value:       res.Status2.MCUTemp.Max,
+			value:       res.Status.MCUTemp.Max,
 		},
 		{
 			field:       "vin_min",
 			units:       "V",
 			deviceClass: &dcVolt,
-			value:       res.Status2.VIN.Min,
+			value:       res.Status.VIN.Min,
 		},
 		{
 			field:       "vin_cur",
 			units:       "V",
 			deviceClass: &dcVolt,
-			value:       res.Status2.VIN.Cur,
+			value:       res.Status.VIN.Cur,
 		},
 		{
 			field:       "vin_max",
 			units:       "V",
 			deviceClass: &dcVolt,
-			value:       res.Status2.VIN.Max,
+			value:       res.Status.VIN.Max,
 		},
 		{
 			field: "geometry",
-			value: res.Status2.Geometry,
+			value: res.Status.Geometry,
 		},
 		{
 			field: "layer",
-			value: res.Status3.CurrentLayer,
+			value: res.Status.CurrentLayer,
 		},
 	}
-	if len(res.Status2.Coordinates.XYZ) == 3 {
+	if len(res.Status.Coordinates.XYZ) == 3 {
 		for i, v := range []string{"x", "y", "z"} {
 			variables = append(variables, &Variable{
 				field: v,
 				icon:  "mdi:axis-" + v + "-arrow",
-				value: res.Status2.Coordinates.XYZ[i],
+				value: res.Status.Coordinates.XYZ[i],
 			})
 		}
 	}
-	for i := range res.Status2.Coordinates.Extruder {
+	for i := range res.Status.Coordinates.Extruder {
 		variables = append(variables, &Variable{
 			field: fmt.Sprintf("e%d", i),
 			icon:  "mdi:mdi-printer-3d-nozzle",
-			value: res.Status2.Coordinates.Extruder[i],
+			value: res.Status.Coordinates.Extruder[i],
 		})
 	}
-	for i := range res.Status2.Temps.Current {
-		if res.Status2.Temps.Current[i] > 1000 {
+	for i := range res.Status.Temps.Current {
+		if res.Status.Temps.Current[i] > 1000 {
 			continue
 		}
 		temp := fmt.Sprintf("temp%d", i)
-		if len(res.Status2.Temps.Names) > i && res.Status2.Temps.Names[i] != "" {
-			temp = res.Status2.Temps.Names[i]
+		if len(res.Status.Temps.Names) > i && res.Status.Temps.Names[i] != "" {
+			temp = res.Status.Temps.Names[i]
 			if !strings.Contains(temp, "temp") {
 				temp = "temp_" + temp
 			}
@@ -257,7 +251,7 @@ func variablesFromResults(res *PollResult) []*Variable {
 			field:       temp,
 			units:       "°C",
 			deviceClass: &dcTemp,
-			value:       res.Status2.Temps.Current[i],
+			value:       res.Status.Temps.Current[i],
 		})
 	}
 	return variables
@@ -268,7 +262,7 @@ func discoveryMessages(cfg *Config, res *PollResult, variables []*Variable) []*m
 		{Topic: AvailabilityTopic(cfg, "bridge")},
 		{Topic: res.AvailabilityTopic},
 	}
-	realName := res.Status2.Name
+	realName := res.Status.Name
 
 	msgs := []*mqtt.Msg{}
 	for _, v := range variables {

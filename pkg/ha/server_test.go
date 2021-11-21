@@ -43,8 +43,7 @@ func Test_PollDevice(t *testing.T) {
 		TopicFriendlyName: "mockrrf",
 		StateTopic:        "rrfdata/mockrrf/state",
 		Config:            mock.ConfigResponse(),
-		Status2:           mock.StatusResponse(2, 0),
-		Status3:           mock.StatusResponse(3, 1),
+		Status:            mock.FullStatusResponse(0),
 	}, r)
 }
 
@@ -83,8 +82,7 @@ func Test_VariablesFromResults(t *testing.T) {
 		AvailabilityTopic: "rrfdata/mockrrf/availability",
 		StateTopic:        "rrfdata/mockrrf/state",
 		Config:            mock.ConfigResponse(),
-		Status2:           mock.StatusResponse(2, 0),
-		Status3:           mock.StatusResponse(3, 1),
+		Status:            mock.FullStatusResponse(0),
 	})
 	dcTemp := ha.DeviceClassTemperature
 	dcVolt := ha.DeviceClassVoltage
@@ -271,8 +269,7 @@ func Test_DiscoveryMessages(t *testing.T) {
 		AvailabilityTopic: "rrfdata/mockrrf/availability",
 		StateTopic:        "rrfdata/mockrrf/state",
 		Config:            mock.ConfigResponse(),
-		Status2:           mock.StatusResponse(2, 0),
-		Status3:           mock.StatusResponse(3, 1),
+		Status:            mock.FullStatusResponse(0),
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
