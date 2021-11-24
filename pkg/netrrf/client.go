@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/beanz/rrf-go/pkg/types"
@@ -107,7 +108,9 @@ func (c *Client) Authenticate(ctx context.Context) error {
 	var resp types.AuthResponse
 	err := c.Request(ctx, "rr_connect?password="+c.password, &resp)
 	if err != nil {
-		return fmt.Errorf("rrf auth failed %w", err)
+		s := err.Error()
+		s = strings.ReplaceAll(s, c.password, "********")
+		return fmt.Errorf("rrf auth failed %s", s)
 	}
 	if resp.ErrorCode != 0 {
 		return AuthenticationError(resp)

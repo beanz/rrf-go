@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -121,6 +122,16 @@ func Test_Authenticate(t *testing.T) {
 			tc.checks(t, httpClient.requests)
 		})
 	}
+}
+
+func Test_Authenticate_HidePassowrd(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	port := ln.Addr().(*net.TCPAddr).Port
+	ln.Close()
+	rrf := NewClient(fmt.Sprintf("localhost:%d", port), "foobar")
+	err = rrf.Authenticate(context.Background())
+	assert.NotContains(t, err.Error(), "foobar")
+	assert.Contains(t, err.Error(), "********")
 }
 
 func Test_AuthenticationError(t *testing.T) {
