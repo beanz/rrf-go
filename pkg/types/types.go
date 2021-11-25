@@ -40,14 +40,14 @@ type StatusResponse struct {
 	Coordinates StatusCoords `json:"coords,omitempty"`
 	Speeds      Speeds       `json:"speeds,omitempty"`
 	CurrentTool int          `json:"currentTool,omitempty"`
-	Output      Output       `json:"output,omitempty"`
+	Output      *Output      `json:"output,omitempty"`
 	Params      Params       `json:"params,omitempty"`
 	Seq         int          `json:"seq,omitempty"`
 	Sensors     Sensors      `json:"sensors,omitempty"`
 	Temps       Temps        `json:"temps,omitempty"`
 	Resp        string       `json:"resp,omitempty"`
 	UpTime      Time         `json:"time,omitempty"`
-	Scanner     Scanner      `json:"scanner,omitempty"`
+	Scanner     *Scanner     `json:"scanner,omitempty"`
 	Spindles    []Spindle    `json:"spindles,omitempty"`
 
 	// type 2 properties
@@ -67,8 +67,8 @@ type StatusResponse struct {
 	Name                   string           `json:"name,omitempty"`
 	Probe                  Probe            `json:"probe:,omitempty"`
 	Tools                  []Tool           `json:"tools,omitempty"`
-	MCUTemp                MinCurMax        `json:"mcutemp,omitempty"`
-	VIN                    MinCurMax        `json:"vin,omitempty"`
+	MCUTemp                *MinCurMax       `json:"mcutemp,omitempty"`
+	VIN                    *MinCurMax       `json:"vin,omitempty"`
 
 	// type 3 properties
 	CurrentLayer       int       `json:"currentLayer,omitempty"`

@@ -227,12 +227,12 @@ func Test_StatusResponse2(t *testing.T) {
 						Offsets: []float64{0, 0, 0},
 					},
 				},
-				MCUTemp: MinCurMax{
+				MCUTemp: &MinCurMax{
 					Min: 31,
 					Cur: 38.4,
 					Max: 38.6,
 				},
-				VIN: MinCurMax{
+				VIN: &MinCurMax{
 					Min: 11.9,
 					Cur: 12.1,
 					Max: 12.2,
