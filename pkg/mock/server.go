@@ -310,6 +310,7 @@ func StatusResponse(kind int, count float64) *types.StatusResponse {
 				Active:  [][]float64{{0}},
 				Standby: [][]float64{{0}},
 			},
+			Extra: []types.ExtraTemps{},
 		},
 		UpTime: 500,
 	}

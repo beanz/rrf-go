@@ -128,6 +128,12 @@ func Test_StatusResponse1(t *testing.T) {
 						Off, Active, Off, Off,
 						Off, Off, Off, Off,
 					},
+					Extra: []ExtraTemps{
+						ExtraTemps{
+							Name: "*MCU",
+							Temp: 38.3,
+						},
+					},
 				},
 				UpTime: 567,
 			},
@@ -200,6 +206,12 @@ func Test_StatusResponse2(t *testing.T) {
 					Tools: ToolTemps{
 						Active:  [][]float64{[]float64{0}},
 						Standby: [][]float64{[]float64{0}},
+					},
+					Extra: []ExtraTemps{
+						ExtraTemps{
+							Name: "*MCU",
+							Temp: 38.4,
+						},
 					},
 				},
 				UpTime:                 567,
@@ -301,6 +313,12 @@ func Test_StatusResponse3(t *testing.T) {
 						Off, Active, Off, Off,
 						Off, Off, Off, Off,
 					},
+					Extra: []ExtraTemps{
+						ExtraTemps{
+							Name: "*MCU",
+							Temp: 38.4,
+						},
+					},
 				},
 				UpTime:  567,
 				ExtrRaw: []float64{0},
@@ -351,6 +369,7 @@ func Test_StatusResponse3(t *testing.T) {
 						Active:  [][]float64{[]float64{220}},
 						Standby: [][]float64{[]float64{220}},
 					},
+					Extra: []ExtraTemps{},
 				},
 				UpTime:             4885.0,
 				CurrentLayer:       10,

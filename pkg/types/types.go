@@ -271,13 +271,19 @@ type ToolTemps struct {
 }
 
 type Temps struct {
-	Bed     Temp        `json:"bed,omitempty"`
-	Chamber Temp        `json:"chamber,omitempty"`
-	Heads   Temp        `json:"heads,omitempty"`
-	Tools   ToolTemps   `json:"tools,omitempty"`
-	Current []float64   `json:"current,omitempty"`
-	State   []TempState `json:"state,omitempty"`
-	Names   []string    `json:"names,omitempty"`
+	Bed     Temp         `json:"bed,omitempty"`
+	Chamber Temp         `json:"chamber,omitempty"`
+	Heads   Temp         `json:"heads,omitempty"`
+	Tools   ToolTemps    `json:"tools,omitempty"`
+	Current []float64    `json:"current,omitempty"`
+	State   []TempState  `json:"state,omitempty"`
+	Names   []string     `json:"names,omitempty"`
+	Extra   []ExtraTemps `json:"extra"`
+}
+
+type ExtraTemps struct {
+	Name string  `json:"name,omitempty"`
+	Temp float64 `json:"temp,omitempty"`
 }
 
 type Time float64 // todo parse to time.Duration
