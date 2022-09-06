@@ -166,12 +166,14 @@ func (f *FanRPMs) UnmarshalJSON(data []byte) error {
 		}
 		return r
 	}, s)
-	for _, vs := range strings.Split(s, ",") {
-		v, err := strconv.ParseFloat(vs, 64)
-		if err != nil {
-			return fmt.Errorf("unmarshal fanRPM '%s': %w", vs, err)
+	if s != "" {
+		for _, vs := range strings.Split(s, ",") {
+			v, err := strconv.ParseFloat(vs, 64)
+			if err != nil {
+				return fmt.Errorf("unmarshal fanRPM '%s': %w", vs, err)
+			}
+			*f = append(*f, v)
 		}
-		*f = append(*f, v)
 	}
 	return nil
 }
